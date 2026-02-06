@@ -29,10 +29,10 @@
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden flex text-gray-800">
 
-    <!-- Loading Overlay Fullscreen (Initial Load) -->
+    <!-- Loading Overlay Fullscreen (Initial Load Only) -->
     <div id="app-loading" class="fixed inset-0 z-[60] bg-white flex flex-col items-center justify-center">
         <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-4"></div>
-        <p class="text-gray-600 font-medium">Loading...</p>
+        <p class="text-gray-600 font-medium">Menghubungkan ke Database...</p>
     </div>
 
     <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black opacity-50 z-20 hidden lg:hidden"></div>
@@ -120,7 +120,7 @@
 
             <div id="view-home" class="h-full overflow-y-auto p-4 lg:p-6 animate-fade-in">
                 <!-- Banner Penutupan/Akses Otomatis -->
-                <div id="curfew-banner" class="hidden mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r shadow-sm">
+                <div id="curfew-banner" class="hidden mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r shadow-sm transition-all duration-300">
                     <div class="flex items-center">
                         <div class="flex-shrink-0 text-yellow-500">
                             <i class="fa-solid fa-clock text-2xl"></i>
@@ -128,7 +128,7 @@
                         <div class="ml-3">
                             <h3 class="text-sm font-bold text-yellow-800">Info Akses Menu</h3>
                             <p class="text-sm text-yellow-700 mt-1">
-                                Beberapa menu mungkin tidak tampil karena belum dibuka atau sudah ditutup.
+                                Beberapa menu disembunyikan otomatis karena belum dibuka atau jadwal telah berakhir.
                             </p>
                         </div>
                     </div>
@@ -195,7 +195,7 @@
                             </form>
                         </div>
                         <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-                            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center"><h3 class="font-bold text-gray-700">Daftar Menu Aktif</h3><button onclick="fetchFromDatabase()" class="text-xs text-blue-500 hover:text-blue-700 underline"><i class="fa-solid fa-rotate mr-1"></i>Refresh Data</button></div>
+                            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center"><h3 class="font-bold text-gray-700">Daftar Menu Aktif</h3><button onclick="fetchFromDatabase(false)" class="text-xs text-blue-500 hover:text-blue-700 underline"><i class="fa-solid fa-rotate mr-1"></i>Refresh Data</button></div>
                             <div id="settings-menu-list" class="divide-y divide-gray-100"></div>
                         </div>
                     </div>
@@ -234,6 +234,7 @@
         // --- STATE MANAGEMENT ---
         let announcements = [];
         let menus = [];
+        let lastFetchedData = ""; // Untuk komparasi Realtime
 
         // --- COLOR MAPS ---
         const gradients = { blue: 'from-blue-500 to-blue-600', green: 'from-emerald-500 to-emerald-600', purple: 'from-purple-500 to-purple-600', orange: 'from-orange-500 to-orange-600', red: 'from-red-500 to-red-600' };
@@ -259,25 +260,44 @@
                 appLoading.innerHTML = '<div class="text-center p-4"><h3 class="text-xl font-bold text-red-600">Error Konfigurasi</h3><p>Anda belum memasukkan URL Google Script di dalam kode HTML.</p></div>';
                 return;
             }
-            await fetchFromDatabase();
+            await fetchFromDatabase(false); // Initial Fetch (Show Loader)
+            
+            // --- REALTIME POLLING ---
+            // 1. Cek Database setiap 5 detik (update jika admin rubah data)
+            setInterval(() => fetchFromDatabase(true), 5000); 
+            
+            // 2. Refresh UI setiap 1 menit (untuk update status Jam Buka/Tutup di sisi client)
+            setInterval(refreshUI, 60000); 
         }
 
         // --- DATABASE FUNCTIONS (FETCH API) ---
-        async function fetchFromDatabase() {
+        // Parameter isBackground: Jika true, tidak menampilkan loading spinner/error alert
+        async function fetchFromDatabase(isBackground = false) {
             try {
+                // Gunakan timestamp untuk cache busting
                 const response = await fetch(GOOGLE_SCRIPT_URL + '?action=read&t=' + new Date().getTime());
                 const data = await response.json();
                 
                 if (data.status === 'success') {
-                    menus = data.menus;
-                    announcements = data.announcements;
-                    refreshUI();
-                    appLoading.classList.add('hidden');
+                    // --- REALTIME CHECK LOGIC ---
+                    // Bandingkan data baru dengan data lama. Jika sama, jangan re-render (biar gak kedip)
+                    const currentDataString = JSON.stringify(data);
+                    if (currentDataString !== lastFetchedData) {
+                        menus = data.menus;
+                        announcements = data.announcements;
+                        lastFetchedData = currentDataString;
+                        refreshUI();
+                        console.log("Data updated from server.");
+                    }
+                    
+                    if (!isBackground) appLoading.classList.add('hidden');
                 }
             } catch (error) {
                 console.error("Error fetching data:", error);
-                Swal.fire("Gagal Terhubung", "Tidak dapat mengambil data dari database. Periksa koneksi internet.", "error");
-                appLoading.classList.add('hidden');
+                if (!isBackground) {
+                    Swal.fire("Gagal Terhubung", "Tidak dapat mengambil data dari database. Periksa koneksi internet.", "error");
+                    appLoading.classList.add('hidden');
+                }
             }
         }
 
@@ -285,7 +305,6 @@
             Swal.fire({ title: 'Menyimpan...', text: 'Sedang sinkronisasi dengan Google Sheet', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
             
             try {
-                // Apps Script requires simple POST body stringified
                 const response = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify({ action: action, ...payload })
@@ -293,8 +312,10 @@
                 const data = await response.json();
                 
                 if (data.status === 'success') {
+                    // Update lokal langsung biar cepat
                     menus = data.menus;
                     announcements = data.announcements;
+                    lastFetchedData = JSON.stringify(data); // Update cache biar gak fetch ulang instan
                     refreshUI();
                     Swal.fire("Berhasil", "Data berhasil disimpan di Database!", "success");
                 }
@@ -320,27 +341,22 @@
             const now = new Date();
             const currentTotalMinutes = (now.getHours() * 60) + now.getMinutes();
 
-            // Fungsi Helper Konversi "HH:MM" ke Menit
             const timeToMinutes = (timeStr) => {
                 if (!timeStr || !timeStr.includes(':')) return null;
                 const [h, m] = timeStr.split(':').map(Number);
                 return (h * 60) + m;
             };
 
-            // 2. Cek Jam Buka Otomatis (Start Time)
+            // 2. Cek Jam Buka Otomatis
             if (menu.auto_open) {
                 const openMins = timeToMinutes(menu.auto_open);
-                if (openMins !== null && currentTotalMinutes < openMins) {
-                    return false; // Belum buka
-                }
+                if (openMins !== null && currentTotalMinutes < openMins) return false;
             }
 
-            // 3. Cek Jam Tutup Otomatis (End Time)
+            // 3. Cek Jam Tutup Otomatis
             if (menu.auto_close) {
                 const closeMins = timeToMinutes(menu.auto_close);
-                if (closeMins !== null && currentTotalMinutes >= closeMins) {
-                    return false; // Sudah tutup
-                }
+                if (closeMins !== null && currentTotalMinutes >= closeMins) return false;
             }
             
             return true;
@@ -381,7 +397,6 @@
                 homeCardsContainer.appendChild(card);
             });
 
-            // Tampilkan Banner jika ada menu yang disembunyikan karena jam/status
             if (hiddenCount > 0) {
                 curfewBanner.classList.remove('hidden');
             } else {
@@ -413,8 +428,8 @@
                 icon: document.getElementById('menu-icon').value,
                 color: document.getElementById('menu-color').value,
                 status: document.getElementById('menu-status').value,
-                auto_close: document.getElementById('menu-auto-close').value, // Simpan sebagai string HH:MM
-                auto_open: document.getElementById('menu-auto-open').value // Simpan sebagai string HH:MM
+                auto_close: document.getElementById('menu-auto-close').value, 
+                auto_open: document.getElementById('menu-auto-open').value 
             };
             sendToDatabase('saveMenu', { data: data });
             resetMenuForm();
@@ -448,26 +463,18 @@
         function renderMenuSettingsList() {
             const list = document.getElementById('settings-menu-list'); list.innerHTML = '';
             menus.forEach(menu => {
-                // LOGIKA BARU: Status "Cerdas" di Admin Panel
-                // 1. Cek status manual
                 const manualInactive = menu.status && menu.status.toString().toLowerCase() === 'inactive';
-                
-                // 2. Cek apakah SEKARANG sedang aktif berdasarkan jam?
                 const isCurrentlyActive = isMenuActive(menu);
 
                 let statusBadge;
                 if (manualInactive) {
-                    // Jika dimatikan manual, selalu merah
                     statusBadge = '<span class="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-600 border border-gray-300">Non-Aktif</span>';
                 } else if (!isCurrentlyActive) {
-                    // Jika manual AKTIF, tapi jamnya TUTUP -> Warna Oranye
                     statusBadge = '<span class="px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-700 border border-orange-200 font-bold"><i class="fa-solid fa-clock mr-1"></i>Tutup (Jadwal)</span>';
                 } else {
-                    // Jika manual AKTIF dan jam BUKA -> Hijau
                     statusBadge = '<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700 border border-green-200 font-bold"><i class="fa-solid fa-check mr-1"></i>Aktif</span>';
                 }
                 
-                // Indikator Jam Buka/Tutup
                 let timeBadge = '';
                 const openTime = menu.auto_open ? menu.auto_open : '...';
                 const closeTime = menu.auto_close ? menu.auto_close : '...';
@@ -496,7 +503,6 @@
                 document.getElementById('menu-color').value = item.color;
                 document.getElementById('menu-status').value = (item.status && item.status.toString().toLowerCase() === 'inactive') ? 'inactive' : 'active'; 
                 
-                // ISI FIELD AUTO OPEN & CLOSE (Format sudah HH:MM)
                 document.getElementById('menu-auto-close').value = item.auto_close || ''; 
                 document.getElementById('menu-auto-open').value = item.auto_open || ''; 
 
@@ -513,7 +519,7 @@
             document.getElementById('menu-url').value = ''; 
             document.getElementById('menu-status').value = 'active'; 
             document.getElementById('menu-auto-close').value = ''; 
-            document.getElementById('menu-auto-open').value = ''; // RESET JAM
+            document.getElementById('menu-auto-open').value = ''; 
             document.getElementById('btn-save-menu').innerHTML = '<i class="fa-solid fa-plus mr-2"></i> Simpan ke Database'; 
         }
 
