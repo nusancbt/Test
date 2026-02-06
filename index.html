@@ -448,10 +448,24 @@
         function renderMenuSettingsList() {
             const list = document.getElementById('settings-menu-list'); list.innerHTML = '';
             menus.forEach(menu => {
-                const isInactive = menu.status && menu.status.toString().toLowerCase() === 'inactive';
-                let statusBadge = isInactive 
-                    ? '<span class="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-600 border border-gray-300">Non-Aktif</span>' 
-                    : '<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700 border border-green-200">Aktif</span>';
+                // LOGIKA BARU: Status "Cerdas" di Admin Panel
+                // 1. Cek status manual
+                const manualInactive = menu.status && menu.status.toString().toLowerCase() === 'inactive';
+                
+                // 2. Cek apakah SEKARANG sedang aktif berdasarkan jam?
+                const isCurrentlyActive = isMenuActive(menu);
+
+                let statusBadge;
+                if (manualInactive) {
+                    // Jika dimatikan manual, selalu merah
+                    statusBadge = '<span class="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-600 border border-gray-300">Non-Aktif</span>';
+                } else if (!isCurrentlyActive) {
+                    // Jika manual AKTIF, tapi jamnya TUTUP -> Warna Oranye
+                    statusBadge = '<span class="px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-700 border border-orange-200 font-bold"><i class="fa-solid fa-clock mr-1"></i>Tutup (Jadwal)</span>';
+                } else {
+                    // Jika manual AKTIF dan jam BUKA -> Hijau
+                    statusBadge = '<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700 border border-green-200 font-bold"><i class="fa-solid fa-check mr-1"></i>Aktif</span>';
+                }
                 
                 // Indikator Jam Buka/Tutup
                 let timeBadge = '';
@@ -459,7 +473,7 @@
                 const closeTime = menu.auto_close ? menu.auto_close : '...';
                 
                 if (menu.auto_open || menu.auto_close) {
-                    timeBadge = `<span class="px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-700 border border-orange-200 ml-1"><i class="fa-regular fa-clock mr-1"></i>${openTime} - ${closeTime}</span>`;
+                    timeBadge = `<span class="px-2 py-1 text-xs rounded-full bg-blue-50 text-blue-600 border border-blue-100 ml-1 font-mono text-[10px]">${openTime} - ${closeTime}</span>`;
                 }
 
                 list.innerHTML += `<div class="p-4 flex flex-col md:flex-row justify-between items-center hover:bg-gray-50 gap-4"><div class="flex items-center gap-4 flex-1 overflow-hidden"><div class="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-600"><i class="fa-solid ${menu.icon}"></i></div><div class="min-w-0"><div class="flex items-center gap-2 flex-wrap"><h4 class="font-bold text-gray-800 truncate">${menu.title}</h4>${statusBadge}${timeBadge}</div><p class="text-xs text-blue-600 truncate font-mono">${menu.url}</p></div></div><div class="flex gap-2 shrink-0"><button onclick="editMenu('${menu.id}')" class="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded text-sm font-medium">Edit</button><button onclick="deleteMenu('${menu.id}')" class="px-3 py-1.5 bg-red-100 text-red-700 rounded text-sm font-medium">Hapus</button></div></div>`;
