@@ -12,12 +12,12 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .sidebar-transition { transition: transform 0.3s ease-in-out; }
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
         
-        /* Playlist specific scrollbar */
+        /* Playlist Scrollbar */
         .playlist-scroll::-webkit-scrollbar { width: 6px; }
         .playlist-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
         .playlist-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -32,18 +32,18 @@
         .modal-overlay { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 600; }
         .tab-btn { color: #6b7280; font-weight: 500; }
-        
-        /* Playlist Button Active State */
-        .playlist-btn.active { background-color: #eff6ff; border-left: 4px solid #2563eb; color: #1d4ed8; }
-        .playlist-btn { border-left: 4px solid transparent; }
-        
-        /* Transition for playlist sidebar toggle */
-        #playlist-sidebar { transition: width 0.3s ease, opacity 0.3s ease; }
+
+        /* Playlist Item Styles */
+        .playlist-item { transition: all 0.2s; border-left: 3px solid transparent; }
+        .playlist-item:hover { background-color: #f8fafc; }
+        .playlist-item.active { background-color: #eff6ff; border-left-color: #2563eb; }
+        .playlist-item.active .title { color: #1d4ed8; font-weight: 600; }
+        .playlist-item.active .icon-play { opacity: 1; }
     </style>
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden flex text-gray-800">
 
-    <!-- Loading Overlay Fullscreen (Initial Load Only) -->
+    <!-- Loading Overlay Fullscreen (Initial Load) -->
     <div id="app-loading" class="fixed inset-0 z-[60] bg-white flex flex-col items-center justify-center">
         <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-4"></div>
         <p class="text-gray-600 font-medium">Menghubungkan ke Database...</p>
@@ -157,17 +157,17 @@
                 </div>
             </div>
 
+            <!-- PLAYER WRAPPER (Responsive Flex Column on Mobile, Row on Desktop) -->
             <div id="view-iframe-wrapper" class="hidden w-full h-full bg-white flex flex-col md:flex-row relative">
-                <!-- Container Pemutar Video/Konten -->
-                <div class="relative flex-1 h-[60vh] md:h-full bg-black transition-all duration-300">
+                
+                <!-- 1. VIDEO CONTAINER -->
+                <div id="video-container" class="relative flex-1 bg-black h-[50vh] md:h-full transition-all duration-300">
                     <iframe id="main-iframe" class="w-full h-full" src="" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
                     
-                    <!-- Tombol Toggle Playlist -->
-                    <button id="playlist-toggle-btn" onclick="togglePlaylist()" class="hidden absolute top-3 right-3 z-30 bg-black/60 hover:bg-blue-600 text-white px-3 py-2 rounded-lg backdrop-blur-sm transition-all shadow border border-white/10 group">
-                        <div class="flex items-center gap-2">
-                            <i id="playlist-toggle-icon" class="fa-solid fa-list"></i> 
-                            <span id="playlist-toggle-text" class="text-xs font-bold hidden group-hover:inline transition-all">Daftar Materi</span>
-                        </div>
+                    <!-- Tombol Toggle Playlist Floating -->
+                    <button id="playlist-toggle-btn" onclick="togglePlaylist()" class="hidden absolute top-4 right-4 z-20 bg-black/70 hover:bg-blue-600 text-white px-3 py-2 rounded-md shadow-lg border border-white/20 backdrop-blur-sm transition-all text-xs flex items-center gap-2 group">
+                        <i id="playlist-toggle-icon" class="fa-solid fa-list"></i>
+                        <span class="hidden group-hover:inline font-medium">Daftar Materi</span>
                     </button>
 
                     <div id="iframe-error" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-50 p-6 text-center">
@@ -178,10 +178,10 @@
                     </div>
                 </div>
 
-                <!-- Container Playlist (Sidebar) -->
-                <div id="playlist-sidebar" class="hidden w-full md:w-80 h-[40vh] md:h-full bg-white border-l border-gray-200 flex flex-col shadow-xl z-20">
+                <!-- 2. PLAYLIST SIDEBAR -->
+                <div id="playlist-sidebar" class="hidden w-full md:w-80 h-[50vh] md:h-full bg-white border-l border-gray-200 flex flex-col shadow-xl z-10 transition-all duration-300">
                     <div class="p-3 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                        <h3 class="font-bold text-gray-700 flex items-center text-sm">
+                        <h3 class="font-bold text-gray-700 text-sm flex items-center">
                             <i class="fa-solid fa-list-ul mr-2 text-blue-600"></i> Materi Pembelajaran
                         </h3>
                         <div class="flex items-center gap-2">
@@ -189,8 +189,9 @@
                             <button onclick="togglePlaylist()" class="text-gray-400 hover:text-red-500 md:hidden"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     </div>
-                    <div id="playlist-items" class="flex-1 overflow-y-auto playlist-scroll p-0">
-                        <!-- Item playlist akan di-generate di sini -->
+                    <!-- List Container -->
+                    <div id="playlist-items" class="flex-1 overflow-y-auto playlist-scroll p-0 bg-white">
+                        <!-- Items injected by JS -->
                     </div>
                 </div>
             </div>
@@ -234,7 +235,7 @@
                                 <div class="md:col-span-2"><button type="submit" id="btn-save-menu" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow"><i class="fa-solid fa-plus mr-2"></i> Simpan ke Database</button></div>
                             </form>
                             <div class="mt-4 p-3 bg-blue-50 text-blue-700 text-sm rounded border border-blue-100">
-                                <i class="fa-solid fa-list-ul mr-2"></i> <strong>Fitur Playlist YouTube:</strong>
+                                <i class="fa-solid fa-list-ul mr-2"></i> <strong>Fitur Playlist Youtube:</strong>
                                 <p class="mt-1 ml-6 text-xs">Untuk membuat playlist video, pisahkan link dengan tanda koma ( , ).<br>Contoh: <code>youtube.com/v1, youtube.com/v2</code></p>
                             </div>
                         </div>
@@ -293,7 +294,6 @@
         const playlistCounter = document.getElementById('playlist-counter');
         const playlistToggleBtn = document.getElementById('playlist-toggle-btn');
         const playlistToggleIcon = document.getElementById('playlist-toggle-icon');
-        const playlistToggleText = document.getElementById('playlist-toggle-text');
         const loader = document.getElementById('loader');
         const pageTitle = document.getElementById('page-title');
         const sidebarMenuContainer = document.getElementById('sidebar-dynamic-menu');
@@ -529,6 +529,7 @@
                     playlistUrls = rawUrl.split(',').map(u => u.trim()).filter(u => u !== "");
 
                     if (playlistUrls.length > 1) {
+                        // Playlist Mode
                         initPlaylist(playlistUrls);
                     } else {
                         // Single Mode
@@ -545,30 +546,28 @@
             }
         }
 
-        // --- TOGGLE PLAYLIST FUNCTION ---
+        // --- PLAYLIST TOGGLE FUNCTION ---
         function togglePlaylist() {
             const sidebar = document.getElementById('playlist-sidebar');
             const icon = document.getElementById('playlist-toggle-icon');
             
             if (sidebar.classList.contains('hidden')) {
-                // Tampilkan Playlist
                 sidebar.classList.remove('hidden');
                 icon.classList.remove('fa-expand');
                 icon.classList.add('fa-list');
             } else {
-                // Sembunyikan Playlist (Mode Teater)
                 sidebar.classList.add('hidden');
                 icon.classList.remove('fa-list');
                 icon.classList.add('fa-expand');
             }
         }
 
-        // --- PLAYLIST FUNCTIONS ---
+        // --- PLAYLIST LOGIC ---
         function initPlaylist(urls) {
             playlistSidebar.classList.remove('hidden'); 
-            playlistToggleBtn.classList.remove('hidden'); // Tampilkan tombol toggle
+            playlistToggleBtn.classList.remove('hidden');
             
-            // Reset icon tombol ke "List" karena sidebar terbuka
+            // Default icon state
             const icon = document.getElementById('playlist-toggle-icon');
             icon.classList.remove('fa-expand');
             icon.classList.add('fa-list');
@@ -586,17 +585,17 @@
                 }
 
                 const item = document.createElement('div');
-                item.className = `playlist-btn cursor-pointer p-3 hover:bg-gray-50 flex gap-3 items-center border-b border-gray-100 transition-colors ${index === 0 ? 'active' : ''}`;
+                item.className = `playlist-item cursor-pointer p-3 flex gap-3 items-center border-b border-gray-100 ${index === 0 ? 'active' : ''}`;
                 item.onclick = () => loadPlaylistVideo(index);
                 item.innerHTML = `
                     <div class="relative w-24 h-16 bg-gray-200 rounded overflow-hidden flex-shrink-0 group">
                         <img src="${thumbnail}" class="w-full h-full object-cover transition-transform group-hover:scale-110">
-                        <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 flex items-center justify-center transition-colors">
+                        <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 flex items-center justify-center transition-colors icon-play opacity-0 group-hover:opacity-100">
                             <i class="fa-solid fa-play text-white drop-shadow-md text-sm"></i>
                         </div>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-semibold text-gray-700 truncate">${title}</p>
+                        <p class="text-sm text-gray-700 truncate title">${title}</p>
                         <p class="text-[10px] text-gray-400 mt-1 uppercase tracking-wide">Video Pembelajaran</p>
                     </div>
                 `;
@@ -610,16 +609,16 @@
             activeVideoIndex = index;
             let url = playlistUrls[index];
             
-            document.querySelectorAll('.playlist-btn').forEach((btn, idx) => {
+            document.querySelectorAll('.playlist-item').forEach((btn, idx) => {
                 if (idx === index) btn.classList.add('active');
                 else btn.classList.remove('active');
             });
 
             playlistCounter.textContent = `${index + 1}/${playlistUrls.length}`;
 
-            // Auto-hide playlist on Mobile ONLY
+            // Auto-hide playlist on Mobile ONLY saat ganti video
             if (window.innerWidth < 768) {
-                togglePlaylist(); // Tutup sidebar agar user fokus nonton
+                togglePlaylist(); 
             }
 
             loader.style.display = 'block';
