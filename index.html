@@ -36,6 +36,9 @@
         /* Playlist Button Active State */
         .playlist-btn.active { background-color: #eff6ff; border-left: 4px solid #2563eb; color: #1d4ed8; }
         .playlist-btn { border-left: 4px solid transparent; }
+        
+        /* Transition for playlist sidebar toggle */
+        #playlist-sidebar { transition: width 0.3s ease, opacity 0.3s ease; }
     </style>
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden flex text-gray-800">
@@ -154,10 +157,19 @@
                 </div>
             </div>
 
-            <div id="view-iframe-wrapper" class="hidden w-full h-full bg-white flex flex-col md:flex-row">
+            <div id="view-iframe-wrapper" class="hidden w-full h-full bg-white flex flex-col md:flex-row relative">
                 <!-- Container Pemutar Video/Konten -->
-                <div class="relative flex-1 h-[60vh] md:h-full bg-black">
+                <div class="relative flex-1 h-[60vh] md:h-full bg-black transition-all duration-300">
                     <iframe id="main-iframe" class="w-full h-full" src="" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+                    
+                    <!-- Tombol Toggle Playlist -->
+                    <button id="playlist-toggle-btn" onclick="togglePlaylist()" class="hidden absolute top-3 right-3 z-30 bg-black/60 hover:bg-blue-600 text-white px-3 py-2 rounded-lg backdrop-blur-sm transition-all shadow border border-white/10 group">
+                        <div class="flex items-center gap-2">
+                            <i id="playlist-toggle-icon" class="fa-solid fa-list"></i> 
+                            <span id="playlist-toggle-text" class="text-xs font-bold hidden group-hover:inline transition-all">Daftar Materi</span>
+                        </div>
+                    </button>
+
                     <div id="iframe-error" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-50 p-6 text-center">
                         <i class="fa-solid fa-face-frown text-6xl text-gray-300 mb-4"></i>
                         <h3 class="text-xl font-bold text-gray-700">Tidak dapat memuat halaman</h3>
@@ -168,11 +180,14 @@
 
                 <!-- Container Playlist (Sidebar) -->
                 <div id="playlist-sidebar" class="hidden w-full md:w-80 h-[40vh] md:h-full bg-white border-l border-gray-200 flex flex-col shadow-xl z-20">
-                    <div class="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                        <h3 class="font-bold text-gray-700 flex items-center">
-                            <i class="fa-solid fa-list-ul mr-2 text-blue-600"></i> Daftar Materi
+                    <div class="p-3 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                        <h3 class="font-bold text-gray-700 flex items-center text-sm">
+                            <i class="fa-solid fa-list-ul mr-2 text-blue-600"></i> Materi Pembelajaran
                         </h3>
-                        <span id="playlist-counter" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-bold">0/0</span>
+                        <div class="flex items-center gap-2">
+                            <span id="playlist-counter" class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">0/0</span>
+                            <button onclick="togglePlaylist()" class="text-gray-400 hover:text-red-500 md:hidden"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
                     </div>
                     <div id="playlist-items" class="flex-1 overflow-y-auto playlist-scroll p-0">
                         <!-- Item playlist akan di-generate di sini -->
@@ -264,8 +279,8 @@
         let announcements = [];
         let menus = [];
         let lastFetchedData = ""; 
-        let playlistUrls = []; // Menyimpan URL playlist saat ini
-        let activeVideoIndex = 0; // Index video yang sedang diputar
+        let playlistUrls = []; 
+        let activeVideoIndex = 0; 
 
         // --- COLOR MAPS ---
         const gradients = { blue: 'from-blue-500 to-blue-600', green: 'from-emerald-500 to-emerald-600', purple: 'from-purple-500 to-purple-600', orange: 'from-orange-500 to-orange-600', red: 'from-red-500 to-red-600' };
@@ -276,6 +291,9 @@
         const playlistSidebar = document.getElementById('playlist-sidebar');
         const playlistItems = document.getElementById('playlist-items');
         const playlistCounter = document.getElementById('playlist-counter');
+        const playlistToggleBtn = document.getElementById('playlist-toggle-btn');
+        const playlistToggleIcon = document.getElementById('playlist-toggle-icon');
+        const playlistToggleText = document.getElementById('playlist-toggle-text');
         const loader = document.getElementById('loader');
         const pageTitle = document.getElementById('page-title');
         const sidebarMenuContainer = document.getElementById('sidebar-dynamic-menu');
@@ -411,7 +429,7 @@
             if (match && match[2].length === 11) {
                 return `https://img.youtube.com/vi/${match[2]}/mqdefault.jpg`;
             }
-            return 'https://via.placeholder.com/120x90?text=No+Image';
+            return 'https://via.placeholder.com/120x90?text=Video';
         }
 
         // --- RENDER FUNCTIONS ---
@@ -486,7 +504,8 @@
             
             ['view-home', 'view-iframe-wrapper', 'view-settings'].forEach(id => document.getElementById(id).classList.add('hidden'));
             mainIframe.src = '';
-            playlistSidebar.classList.add('hidden'); // Default sembunyi playlist
+            playlistSidebar.classList.add('hidden'); 
+            playlistToggleBtn.classList.add('hidden'); // Sembunyikan tombol toggle defaultnya
 
             if (viewId === 'home') { 
                 pageTitle.textContent = 'Dashboard Utama'; 
@@ -506,12 +525,10 @@
                     loader.style.display = 'block'; 
                     iframeError.classList.add('hidden');
                     
-                    // --- PLAYLIST LOGIC ---
                     const rawUrl = menuItem.url || "";
                     playlistUrls = rawUrl.split(',').map(u => u.trim()).filter(u => u !== "");
 
                     if (playlistUrls.length > 1) {
-                        // Jika lebih dari 1 URL, Aktifkan Mode Playlist
                         initPlaylist(playlistUrls);
                     } else {
                         // Single Mode
@@ -528,16 +545,41 @@
             }
         }
 
+        // --- TOGGLE PLAYLIST FUNCTION ---
+        function togglePlaylist() {
+            const sidebar = document.getElementById('playlist-sidebar');
+            const icon = document.getElementById('playlist-toggle-icon');
+            
+            if (sidebar.classList.contains('hidden')) {
+                // Tampilkan Playlist
+                sidebar.classList.remove('hidden');
+                icon.classList.remove('fa-expand');
+                icon.classList.add('fa-list');
+            } else {
+                // Sembunyikan Playlist (Mode Teater)
+                sidebar.classList.add('hidden');
+                icon.classList.remove('fa-list');
+                icon.classList.add('fa-expand');
+            }
+        }
+
         // --- PLAYLIST FUNCTIONS ---
         function initPlaylist(urls) {
-            playlistSidebar.classList.remove('hidden'); // Tampilkan Sidebar
+            playlistSidebar.classList.remove('hidden'); 
+            playlistToggleBtn.classList.remove('hidden'); // Tampilkan tombol toggle
+            
+            // Reset icon tombol ke "List" karena sidebar terbuka
+            const icon = document.getElementById('playlist-toggle-icon');
+            icon.classList.remove('fa-expand');
+            icon.classList.add('fa-list');
+
             playlistItems.innerHTML = '';
             activeVideoIndex = 0;
             playlistCounter.textContent = `1/${urls.length}`;
 
             urls.forEach((url, index) => {
                 let thumbnail = 'https://via.placeholder.com/120x90?text=Video';
-                let title = `Video Materi ${index + 1}`;
+                let title = `Materi Bagian ${index + 1}`;
                 
                 if (url.includes('youtube.com') || url.includes('youtu.be')) {
                     thumbnail = getYoutubeThumbnail(url);
@@ -547,43 +589,45 @@
                 item.className = `playlist-btn cursor-pointer p-3 hover:bg-gray-50 flex gap-3 items-center border-b border-gray-100 transition-colors ${index === 0 ? 'active' : ''}`;
                 item.onclick = () => loadPlaylistVideo(index);
                 item.innerHTML = `
-                    <div class="relative w-24 h-16 bg-gray-200 rounded overflow-hidden flex-shrink-0">
-                        <img src="${thumbnail}" class="w-full h-full object-cover">
-                        <div class="absolute inset-0 bg-black/10 flex items-center justify-center">
-                            <i class="fa-solid fa-play text-white drop-shadow-md"></i>
+                    <div class="relative w-24 h-16 bg-gray-200 rounded overflow-hidden flex-shrink-0 group">
+                        <img src="${thumbnail}" class="w-full h-full object-cover transition-transform group-hover:scale-110">
+                        <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 flex items-center justify-center transition-colors">
+                            <i class="fa-solid fa-play text-white drop-shadow-md text-sm"></i>
                         </div>
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-semibold text-gray-700 truncate">${title}</p>
-                        <p class="text-xs text-gray-400 mt-1">Klik untuk memutar</p>
+                        <p class="text-[10px] text-gray-400 mt-1 uppercase tracking-wide">Video Pembelajaran</p>
                     </div>
                 `;
                 playlistItems.appendChild(item);
             });
 
-            loadPlaylistVideo(0); // Load video pertama
+            loadPlaylistVideo(0); 
         }
 
         function loadPlaylistVideo(index) {
             activeVideoIndex = index;
             let url = playlistUrls[index];
             
-            // Update Active State di Sidebar
             document.querySelectorAll('.playlist-btn').forEach((btn, idx) => {
                 if (idx === index) btn.classList.add('active');
                 else btn.classList.remove('active');
             });
 
-            // Update Counter
             playlistCounter.textContent = `${index + 1}/${playlistUrls.length}`;
 
-            // Load to Iframe
+            // Auto-hide playlist on Mobile ONLY
+            if (window.innerWidth < 768) {
+                togglePlaylist(); // Tutup sidebar agar user fokus nonton
+            }
+
             loader.style.display = 'block';
             if (url.includes('youtube.com') || url.includes('youtu.be')) {
                 url = getYoutubeEmbedUrl(url);
             }
             mainIframe.src = url;
-            externalLink.href = playlistUrls[index]; // Link asli untuk tombol external
+            externalLink.href = playlistUrls[index]; 
 
             mainIframe.onload = () => loader.style.display = 'none';
             mainIframe.onerror = () => { loader.style.display = 'none'; iframeError.classList.remove('hidden'); };
