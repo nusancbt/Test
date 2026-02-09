@@ -42,6 +42,7 @@
     <div id="app-loading" class="fixed inset-0 z-[60] bg-white flex flex-col items-center justify-center">
         <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-4"></div>
         <p class="text-gray-600 font-medium">Memuat Aplikasi...</p>
+        <p class="text-xs text-gray-400 mt-2">Menyinkronkan Database...</p>
     </div>
 
     <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black opacity-50 z-20 hidden lg:hidden"></div>
@@ -54,11 +55,11 @@
                     <i class="fa-solid fa-lock text-2xl"></i>
                 </div>
                 <h3 class="text-xl font-bold text-gray-800">Akses Admin</h3>
-                <p class="text-sm text-gray-500 mt-1">Masukkan password untuk pengaturan.</p>
+                <p class="text-sm text-gray-500 mt-1">Masukkan password untuk masuk.</p>
             </div>
             <form onsubmit="verifyPassword(event)">
                 <div class="mb-4">
-                    <input type="password" id="admin-password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Password..." required>
+                    <input type="password" id="admin-password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-center tracking-widest text-lg" placeholder="••••••" required>
                 </div>
                 <div class="flex gap-3">
                     <button type="button" onclick="closePasswordModal()" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Batal</button>
@@ -291,10 +292,10 @@
                                      <div class="bg-red-50 p-4 rounded-lg border border-red-100">
                                          <label class="block text-sm font-bold text-gray-700 mb-2">Password Admin Baru</label>
                                          <div class="flex gap-2">
-                                             <input type="text" id="set-admin-password" class="w-full px-4 py-3 rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-red-500" placeholder="Masukkan password baru...">
+                                             <input type="text" id="set-admin-password" class="w-full px-4 py-3 rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-red-500 font-bold tracking-widest" placeholder="Masukkan password baru...">
                                              <button type="button" onclick="document.getElementById('set-admin-password').value = Math.floor(100000 + Math.random() * 900000)" class="whitespace-nowrap px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium">Acak PIN</button>
                                          </div>
-                                         <p class="text-xs text-red-500 mt-2 font-semibold">PERHATIAN: Ingat password ini baik-baik. Jika lupa, Anda harus mengubahnya manual via Google Sheet.</p>
+                                         <p class="text-xs text-red-500 mt-2 font-semibold">PERHATIAN: Jika lupa password, Anda harus mengubahnya manual via kolom 'admin_password' di Google Sheet.</p>
                                      </div>
                                  </div>
 
@@ -314,15 +315,15 @@
 
     <script>
         // =============================================================
-        // CONFIGURATION: PASTE GOOGLE APPS SCRIPT URL HERE
+        // KONFIGURASI: GANTI URL DI BAWAH INI
         // =============================================================
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlmEpvFVqqqdvjAYpRyi134JAKZ-efIW_ltOaPVLu1sp6BZ6dhwIdkZmqVYQzuFiVN/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCcA7pBjcSlN712xXry_IJKhZ241E8dWwr56EMuOlg5OhgcizaiaZ2MbFRXgr_TMX6/exec';
         // =============================================================
 
         // --- STATE MANAGEMENT ---
         let announcements = [];
         let menus = [];
-        let appSettings = {}; // NEW: Store settings globally
+        let appSettings = {}; // Menyimpan setting dari DB
         let lastFetchedData = ""; 
         let playlistUrls = []; 
         let activeVideoIndex = 0; 
@@ -361,6 +362,7 @@
             setInterval(refreshUI, 60000); 
         }
 
+        // --- DATABASE FETCHING (TERMASUK PASSWORD) ---
         async function fetchFromDatabase(isBackground = false) {
             try {
                 const response = await fetch(GOOGLE_SCRIPT_URL + '?action=read&t=' + new Date().getTime());
@@ -371,10 +373,13 @@
                     if (currentDataString !== lastFetchedData) {
                         menus = data.menus;
                         announcements = data.announcements;
-                        appSettings = data.settings || {}; // Store settings
+                        
+                        // Update Settings (Password & Identitas)
+                        appSettings = data.settings || {}; 
+                        
                         lastFetchedData = currentDataString;
                         
-                        applyGlobalSettings(); // Apply settings immediately
+                        applyGlobalSettings(); // Terapkan nama aplikasi & running text
                         refreshUI();
                         console.log("Data updated from server.");
                     }
@@ -398,10 +403,12 @@
                 });
                 const data = await response.json();
                 if (data.status === 'success') {
+                    // Update state lokal langsung setelah simpan sukses
                     menus = data.menus;
                     announcements = data.announcements;
                     appSettings = data.settings || {};
                     lastFetchedData = JSON.stringify(data);
+                    
                     applyGlobalSettings();
                     refreshUI();
                     Swal.fire("Berhasil", "Data berhasil disimpan!", "success");
@@ -412,8 +419,9 @@
             }
         }
 
-        // --- NEW FUNCTION: APPLY SETTINGS ---
+        // --- APPLY GLOBAL SETTINGS (NAMA & PASSWORD) ---
         function applyGlobalSettings() {
+            // Update UI Nama Aplikasi
             if(appSettings.app_name) {
                 document.getElementById('sidebar-app-name').textContent = appSettings.app_name;
                 document.title = appSettings.app_name;
@@ -432,10 +440,11 @@
                 marqueeContainer.classList.add('hidden');
             }
 
-            // Fill Settings Form with current values
+            // Isi Form Pengaturan dengan Data Database
             document.getElementById('set-app-name').value = appSettings.app_name || '';
             document.getElementById('set-app-subtitle').value = appSettings.app_subtitle || '';
             document.getElementById('set-running-text').value = appSettings.running_text || '';
+            // Jangan tampilkan password di form jika kosong, biar aman
             document.getElementById('set-admin-password').value = appSettings.admin_password || '';
         }
 
@@ -450,6 +459,29 @@
             sendToDatabase('saveSettings', { data: newData });
         }
 
+        // --- VERIFIKASI PASSWORD (DARI DATABASE) ---
+        function verifyPassword(e) { 
+            e.preventDefault(); 
+            const inputPass = document.getElementById('admin-password').value;
+            
+            // Cek apakah settings sudah terload dari DB
+            if (!appSettings || Object.keys(appSettings).length === 0) {
+                 Swal.fire('Data Belum Siap', 'Sedang mengambil data dari server. Tunggu sebentar...', 'warning');
+                 return;
+            }
+
+            // Gunakan password dari DB, fallback ke '112233' jika kosong
+            const validPass = appSettings.admin_password ? String(appSettings.admin_password) : '112233';
+            
+            if (inputPass === validPass) { 
+                closePasswordModal(); 
+                executeSwitch('settings'); 
+            } else { 
+                Swal.fire({ icon: 'error', title: 'Akses Ditolak', text: 'Password Salah.' }); 
+            } 
+        }
+
+        // --- FUNGSI STANDAR LAINNYA ---
         function refreshUI() {
             renderSidebar();
             renderHome();
@@ -620,21 +652,6 @@
         }
 
         function closePasswordModal() { document.getElementById('password-modal').classList.add('hidden'); }
-        
-        // --- UPDATED VERIFY PASSWORD ---
-        function verifyPassword(e) { 
-            e.preventDefault(); 
-            const inputPass = document.getElementById('admin-password').value;
-            // Use password from database OR fallback to 112233
-            const validPass = appSettings.admin_password || '112233';
-            
-            if (inputPass === validPass) { 
-                closePasswordModal(); 
-                executeSwitch('settings'); 
-            } else { 
-                Swal.fire('Password Salah', '', 'error'); 
-            } 
-        }
         
         function switchSettingsTab(tabName) { 
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
