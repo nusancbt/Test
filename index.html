@@ -248,6 +248,11 @@
                             <button onclick="filterLMSMateri('XI TJKT')" class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium bg-white text-gray-600 border hover:bg-gray-50">XI TJKT</button>
                         </div>
                         
+                        <div id="lms-loading" class="hidden text-center py-10">
+                            <div class="animate-spin inline-block w-8 h-8 border-[3px] border-current border-t-transparent text-blue-600 rounded-full" role="status" aria-label="loading"></div>
+                            <p class="mt-2 text-slate-500 text-sm">Sedang memuat materi dari Google Drive...</p>
+                        </div>
+
                         <!-- File Grid -->
                         <div id="lms-file-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                             <!-- Populated by JS -->
@@ -443,7 +448,7 @@
         // =============================================================
         // KONFIGURASI: GANTI URL DI BAWAH INI
         // =============================================================
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCcA7pBjcSlN712xXry_IJKhZ241E8dWwr56EMuOlg5OhgcizaiaZ2MbFRXgr_TMX6/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxv3Ok-YgBOg4rLl7la3LGQXvjNIxAj049eQAOCS5DKaisasQvTgD4vqgTYIWheHIPk/exec';
         // =============================================================
 
         // --- STATE MANAGEMENT ---
@@ -453,15 +458,9 @@
         let lastFetchedData = ""; 
         let playlistUrls = []; 
         let activeVideoIndex = 0; 
-
-        // --- LMS MOCK DATA (Untuk Preview) ---
-        // Karena kita menggabungkan HTML tetapi backend asli lms.html menggunakan google.script.run
-        // kita akan mensimulasikan data LMS di sini agar UI tampil.
-        let lmsLibraryData = [
-            { id: 1, name: "Modul Matematika Dasar.pdf", kelas: "X TJKT", url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", date: new Date().toISOString() },
-            { id: 2, name: "Panduan Jaringan Komputer Dasar.pdf", kelas: "X TJKT", url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", date: new Date().toISOString() },
-            { id: 3, name: "Konfigurasi Mikrotik Lanjutan.pdf", kelas: "XI TJKT", url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", date: new Date().toISOString() }
-        ];
+        
+        // --- LMS DATA ---
+        let lmsLibraryData = []; // Data from Drive
 
         // --- COLOR MAPS ---
         const gradients = { blue: 'from-blue-500 to-blue-600', green: 'from-emerald-500 to-emerald-600', purple: 'from-purple-500 to-purple-600', orange: 'from-orange-500 to-orange-600', red: 'from-red-500 to-red-600' };
@@ -492,18 +491,17 @@
                 appLoading.innerHTML = '<div class="text-center p-4"><h3 class="text-xl font-bold text-red-600">Error Konfigurasi</h3><p>Anda belum memasukkan URL Google Script di dalam kode HTML.</p></div>';
                 return;
             }
+            // Fetch All Data
             await fetchFromDatabase(false); 
-            
-            // Render Initial LMS Data (Mock)
-            renderLMSLibrary(lmsLibraryData);
+            fetchLMSLibrary(); // Ambil data file di background
 
-            setInterval(() => fetchFromDatabase(true), 5000); 
-            setInterval(refreshUI, 60000); 
+            setInterval(() => fetchFromDatabase(true), 10000); // Sync data sheet tiap 10s
         }
 
-        // --- DATABASE FETCHING ---
+        // --- DATABASE FETCHING (SPREADSHEET) ---
         async function fetchFromDatabase(isBackground = false) {
             try {
+                // Gunakan getTime untuk cache busting
                 const response = await fetch(GOOGLE_SCRIPT_URL + '?action=read&t=' + new Date().getTime());
                 const data = await response.json();
                 
@@ -522,11 +520,40 @@
                 }
             } catch (error) {
                 console.error("Error fetching data:", error);
-                if (!isBackground) {
-                    // Fail silently in preview to allow UI to show up
-                    console.warn("Using offline mode due to fetch error");
-                    appLoading.classList.add('hidden');
+                if (!isBackground) appLoading.classList.add('hidden');
+            }
+        }
+
+        // --- LMS FETCHING (GOOGLE DRIVE) ---
+        async function fetchLMSLibrary() {
+            const loading = document.getElementById('lms-loading');
+            const grid = document.getElementById('lms-file-grid');
+            
+            if(lmsLibraryData.length === 0) {
+                 loading.classList.remove('hidden');
+                 grid.classList.add('hidden');
+            }
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'getLMSLibrary' })
+                });
+                const result = await response.json();
+                
+                loading.classList.add('hidden');
+                grid.classList.remove('hidden');
+
+                if(result.status === 'success') {
+                    lmsLibraryData = result.data;
+                    // Render berdasarkan view yang aktif (student/admin)
+                    const isAdminView = !document.getElementById('lms-view-admin').classList.contains('hidden');
+                    if(isAdminView) renderLMSAdminTable();
+                    else renderLMSLibrary(lmsLibraryData);
                 }
+            } catch (error) {
+                console.error("Error fetching LMS:", error);
+                loading.classList.add('hidden');
             }
         }
 
@@ -538,18 +565,24 @@
                     body: JSON.stringify({ action: action, ...payload })
                 });
                 const data = await response.json();
+                
+                // Cek status dari response backend (bisa 'success' atau 'error')
                 if (data.status === 'success') {
-                    menus = data.menus;
-                    announcements = data.announcements;
-                    appSettings = data.settings || {};
-                    lastFetchedData = JSON.stringify(data);
-                    applyGlobalSettings();
+                    // Update state lokal jika response membawa data terbaru
+                    if(data.menus) menus = data.menus;
+                    if(data.announcements) announcements = data.announcements;
+                    if(data.settings) appSettings = data.settings;
+
                     refreshUI();
                     Swal.fire("Berhasil", "Data berhasil disimpan!", "success");
+                    return true;
+                } else {
+                    throw new Error(data.message || "Gagal menyimpan");
                 }
             } catch (error) {
                 console.error("Error saving data:", error);
-                Swal.fire("Error", "Gagal menyimpan data (Cek Koneksi).", "error");
+                Swal.fire("Error", "Gagal menyimpan data: " + error.message, "error");
+                return false;
             }
         }
 
@@ -589,7 +622,7 @@
             sendToDatabase('saveSettings', { data: newData });
         }
 
-        // --- PASSWORD VERIFICATION (Integrated for Settings & LMS) ---
+        // --- PASSWORD VERIFICATION ---
         function checkAdminForLMS() {
             document.getElementById('auth-target').value = 'lms-admin';
             document.getElementById('password-modal').classList.remove('hidden');
@@ -602,7 +635,6 @@
             const inputPass = document.getElementById('admin-password').value;
             const target = document.getElementById('auth-target').value;
             
-            // Gunakan password dari DB, fallback ke '112233' jika kosong
             const validPass = appSettings.admin_password ? String(appSettings.admin_password) : '112233';
             
             if (inputPass === validPass) { 
@@ -637,24 +669,19 @@
         }
 
         function executeSwitch(viewId) {
-            // Update sidebar state
             document.querySelectorAll('.nav-item').forEach(el => { el.classList.remove('active', 'bg-blue-600', 'text-white'); el.classList.add('hover:bg-slate-800'); el.querySelector('i').classList.add('text-slate-400'); });
             const activeBtn = document.getElementById(`btn-${viewId}`);
             if(activeBtn) { activeBtn.classList.add('active'); activeBtn.classList.remove('hover:bg-slate-800'); activeBtn.querySelector('i').classList.remove('text-slate-400'); }
             
-            // Close mobile menu
             if(window.innerWidth < 1024) { document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('mobile-overlay').classList.add('hidden'); }
             
-            // Hide all views
             ['view-home', 'view-iframe-wrapper', 'view-settings', 'view-lms'].forEach(id => document.getElementById(id).classList.add('hidden'));
             mainIframe.src = ''; playlistSidebar.classList.add('hidden'); playlistToggleBtn.classList.add('hidden');
 
-            // Show selected view
             if (viewId === 'home') { pageTitle.textContent = 'Dashboard Utama'; document.getElementById('view-home').classList.remove('hidden'); refreshUI(); }
             else if (viewId === 'settings') { pageTitle.textContent = 'Pengaturan Admin'; document.getElementById('view-settings').classList.remove('hidden'); switchSettingsTab('lms'); refreshUI(); }
             else if (viewId === 'lms') { pageTitle.textContent = 'E-Library / LMS'; document.getElementById('view-lms').classList.remove('hidden'); switchLMSTab('student'); }
             else {
-                // Dynamic Menu logic (Video/Exam)
                 const menuItem = menus.find(m => m.id === viewId);
                 if (menuItem) {
                     let cleanTitle = menuItem.title;
@@ -688,7 +715,7 @@
                 adminView.classList.add('hidden');
                 btnStudent.className = "px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white shadow transition-all";
                 btnAdmin.className = "px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:bg-gray-100 transition-all";
-                renderLMSLibrary(lmsLibraryData); // Refresh list
+                renderLMSLibrary(lmsLibraryData); 
             } else if (tab === 'admin') {
                 studentView.classList.add('hidden');
                 adminView.classList.remove('hidden');
@@ -707,7 +734,7 @@
             grid.innerHTML = '';
             
             if (data.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center py-10 text-gray-400"><i class="fa-solid fa-folder-open text-4xl mb-2"></i><p>Belum ada materi.</p></div>`;
+                grid.innerHTML = `<div class="col-span-full text-center py-10 text-gray-400"><i class="fa-solid fa-folder-open text-4xl mb-2"></i><p>Belum ada materi tersedia.</p></div>`;
                 return;
             }
 
@@ -723,7 +750,7 @@
                             <button onclick="openPreview('${item.url}', '${item.name}')" class="flex-1 bg-slate-800 text-white text-sm py-2 rounded-lg font-bold hover:bg-slate-900 transition-all flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-eye"></i> Baca
                             </button>
-                            <a href="${item.url}" target="_blank" class="px-3 py-2 border rounded-lg hover:bg-slate-50 text-slate-500 flex items-center justify-center">
+                            <a href="${item.downloadUrl}" target="_blank" class="px-3 py-2 border rounded-lg hover:bg-slate-50 text-slate-500 flex items-center justify-center">
                                 <i class="fa-solid fa-download"></i>
                             </a>
                         </div>
@@ -739,7 +766,6 @@
                 const filtered = lmsLibraryData.filter(item => item.kelas === category);
                 renderLMSLibrary(filtered);
             }
-            // Update UI buttons state
             const btns = document.querySelectorAll('.filter-btn');
             btns.forEach(btn => {
                 if(btn.textContent === category) {
@@ -771,7 +797,7 @@
                         <td class="px-4 py-3 font-medium text-slate-700">${item.name}</td>
                         <td class="px-4 py-3"><span class="bg-gray-100 px-2 py-1 rounded text-xs text-gray-600">${item.kelas}</span></td>
                         <td class="px-4 py-3 text-right">
-                            <button onclick="deleteLMSFile(${item.id})" class="text-red-600 hover:bg-red-50 p-2 rounded transition-colors"><i class="fa-solid fa-trash"></i></button>
+                            <button onclick="deleteLMSFile('${item.id}')" class="text-red-600 hover:bg-red-50 p-2 rounded transition-colors"><i class="fa-solid fa-trash"></i></button>
                         </td>
                     </tr>
                 `;
@@ -785,40 +811,70 @@
             
             if(!file) return;
 
-            // Simulasi Upload
-            Swal.fire({
-                title: 'Mengupload...',
-                text: 'Mohon tunggu sebentar',
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading()
-            });
-
-            // Simulate server delay
-            setTimeout(() => {
-                const newItem = {
-                    id: Date.now(),
-                    name: file.name,
-                    kelas: kelas,
-                    url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", // Dummy URL
-                    date: new Date().toISOString()
-                };
-                lmsLibraryData.push(newItem);
+            // Baca file sebagai Base64
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = async function () {
+                const base64Content = reader.result.split(',')[1]; // Hapus header data URL
                 
-                Swal.fire('Sukses', 'File berhasil diupload (Simulasi). Update script Google Sheet Anda untuk fitur permanen.', 'success');
-                document.getElementById('lms-upload-form').reset();
-                renderLMSAdminTable();
-            }, 1500);
+                Swal.fire({
+                    title: 'Mengupload ke Drive...',
+                    text: 'Mohon tunggu, proses tergantung ukuran file.',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
 
-            // NOTE: Untuk implementasi nyata ke Google Drive, Google Script Backend harus memiliki fungsi doPost yang menghandle 'uploadFile'.
+                try {
+                    const response = await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'uploadLMSFile',
+                            fileData: base64Content,
+                            fileName: file.name,
+                            mimeType: file.type,
+                            kelas: kelas
+                        })
+                    });
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        Swal.fire('Sukses', 'File berhasil diupload!', 'success');
+                        document.getElementById('lms-upload-form').reset();
+                        fetchLMSLibrary(); // Refresh data
+                    } else {
+                        throw new Error(result.message);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    Swal.fire('Gagal', 'Terjadi kesalahan saat upload: ' + err.message, 'error');
+                }
+            };
+            reader.onerror = function (error) {
+                Swal.fire('Error', 'Gagal membaca file', 'error');
+            };
         }
 
         function deleteLMSFile(id) {
-            Swal.fire({ title: 'Hapus file ini?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Hapus' })
-            .then((result) => {
+            Swal.fire({ title: 'Hapus file ini?', text: 'File akan dipindah ke sampah Google Drive', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Hapus', confirmButtonColor: '#d33' })
+            .then(async (result) => {
                 if (result.isConfirmed) {
-                    lmsLibraryData = lmsLibraryData.filter(item => item.id !== id);
-                    renderLMSAdminTable();
-                    Swal.fire('Terhapus', 'File dihapus dari daftar (Simulasi).', 'success');
+                    Swal.fire({ title: 'Menghapus...', didOpen: () => Swal.showLoading() });
+                    try {
+                        const response = await fetch(GOOGLE_SCRIPT_URL, {
+                            method: 'POST',
+                            body: JSON.stringify({ action: 'deleteLMSFile', id: id })
+                        });
+                        const resData = await response.json();
+                        
+                        if(resData.status === 'success') {
+                            Swal.fire('Terhapus', 'File berhasil dihapus.', 'success');
+                            fetchLMSLibrary(); // Refresh
+                        } else {
+                            throw new Error(resData.message);
+                        }
+                    } catch(err) {
+                         Swal.fire('Gagal', 'Tidak dapat menghapus file: ' + err.message, 'error');
+                    }
                 }
             });
         }
