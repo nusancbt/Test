@@ -75,7 +75,7 @@
                 <p class="text-sm text-gray-500 mt-1">Masukkan password admin/guru.</p>
             </div>
             <form onsubmit="verifyPassword(event)">
-                <input type="hidden" id="auth-target" value="settings"> <!-- Target: settings or lms-admin -->
+                <input type="hidden" id="auth-target" value="settings">
                 <div class="mb-4">
                     <input type="password" id="admin-password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-center tracking-widest text-lg" placeholder="••••••" required>
                 </div>
@@ -225,12 +225,25 @@
                         <i id="playlist-toggle-icon" class="fa-solid fa-list"></i>
                         <span class="hidden group-hover:inline font-medium">Daftar Materi</span>
                     </button>
-                    <div id="iframe-error" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-50 p-6 text-center">
-                        <i class="fa-solid fa-face-frown text-6xl text-gray-300 mb-4"></i>
-                        <h3 class="text-xl font-bold text-gray-700">Tidak dapat memuat halaman</h3>
-                        <p class="text-sm text-gray-500 mt-2 max-w-md mx-auto">Mungkin website menolak ditampilkan dalam frame atau link rusak.</p>
-                        <a id="external-link" href="#" target="_blank" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Buka di Tab Baru</a>
+                    
+                    <!-- Tampilan 404 / Error -->
+                    <div id="iframe-error" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-white p-8 text-center z-10">
+                        <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-6 animate-fade-in">
+                            <i id="error-icon" class="fa-solid fa-link-slash text-4xl text-red-500"></i>
+                        </div>
+                        <h3 id="error-title" class="text-2xl font-bold text-gray-800 mb-2">Halaman Tidak Ditemukan (404)</h3>
+                        <p id="error-message" class="text-gray-500 mb-8 max-w-md">URL materi atau menu yang Anda tuju tidak valid atau tidak dapat diakses.</p>
+                        
+                        <div class="flex gap-3">
+                            <button onclick="switchView('home')" class="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">
+                                <i class="fa-solid fa-arrow-left mr-2"></i> Kembali ke Dashboard
+                            </button>
+                            <a id="external-link" href="#" target="_blank" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-blue-500/30">
+                                <i class="fa-solid fa-external-link-alt mr-2"></i> Buka di Tab Baru
+                            </a>
+                        </div>
                     </div>
+
                 </div>
                 <div id="playlist-sidebar" class="hidden w-full md:w-80 h-[50vh] md:h-full bg-white border-l border-gray-200 flex flex-col shadow-xl z-10 transition-all duration-300">
                     <div class="p-3 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
@@ -241,22 +254,19 @@
                 </div>
             </div>
 
-            <!-- 3. NEW LMS VIEW (Integrated) -->
+            <!-- 3. NEW LMS VIEW (Integrated) - ONLY STUDENT VIEW NOW -->
             <div id="view-lms" class="hidden h-full overflow-y-auto p-4 lg:p-6 bg-slate-50 custom-scrollbar animate-fade-in">
                 <div class="max-w-7xl mx-auto pb-10">
-                    <!-- LMS Navigation -->
+                    <!-- LMS Navigation Header -->
                     <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
                         <div>
                             <h2 class="text-2xl font-bold text-slate-800">📚 Perpustakaan Digital</h2>
                             <p class="text-slate-500 text-sm">Akses materi PDF dan E-Book sekolah.</p>
                         </div>
-                        <div class="flex space-x-2">
-                            <button onclick="switchLMSTab('student')" id="btn-lms-student" class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white shadow transition-all">Siswa</button>
-                            <button onclick="checkAdminForLMS()" id="btn-lms-admin" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:bg-gray-100 transition-all">Panel Guru</button>
-                        </div>
+                        <!-- Admin buttons removed from here -->
                     </div>
 
-                    <!-- LMS: Student View -->
+                    <!-- LMS: Student View (Default) -->
                     <div id="lms-view-student" class="space-y-6">
                         <!-- Filter Dinamis -->
                         <div id="lms-filter-container" class="flex flex-wrap gap-2 mb-4">
@@ -274,20 +284,50 @@
                             <!-- Populated by JS -->
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <!-- LMS: Admin View -->
-                    <div id="lms-view-admin" class="hidden space-y-6">
-                        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r shadow-sm flex justify-between items-center">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0 text-yellow-500"><i class="fa-solid fa-user-tie text-xl"></i></div>
-                                <div class="ml-3">
-                                    <h3 class="text-sm font-bold text-yellow-800">Mode Guru Aktif</h3>
-                                    <p class="text-sm text-yellow-700 mt-1">Anda dapat mengupload, menghapus file, dan mengelola kelas.</p>
-                                </div>
+            <!-- 4. SETTINGS VIEW -->
+            <div id="view-settings" class="hidden h-full overflow-y-auto p-4 lg:p-6 bg-gray-50 custom-scrollbar">
+                <div class="max-w-7xl mx-auto pb-10">
+                    <!-- Tab Navigation -->
+                    <div class="flex border-b border-gray-200 mb-6 bg-white rounded-t-xl px-2 pt-2 shadow-sm overflow-x-auto">
+                        <button onclick="switchSettingsTab('lms')" id="tab-btn-lms" class="tab-btn active px-6 py-3 mr-2 focus:outline-none rounded-t-lg whitespace-nowrap"><i class="fa-solid fa-graduation-cap mr-2"></i> Manajemen Dashboard</button>
+                        
+                        <!-- NEW ADMIN TAB -->
+                        <button onclick="switchSettingsTab('lms-admin')" id="tab-btn-lms-admin" class="tab-btn px-6 py-3 mr-2 focus:outline-none rounded-t-lg whitespace-nowrap text-blue-600"><i class="fa-solid fa-book mr-2"></i> E-Library (Guru)</button>
+                        
+                        <button onclick="switchSettingsTab('menu')" id="tab-btn-menu" class="tab-btn px-6 py-3 mr-2 focus:outline-none rounded-t-lg whitespace-nowrap"><i class="fa-solid fa-list-check mr-2"></i> Menu Dasar</button>
+                        <button onclick="switchSettingsTab('announcement')" id="tab-btn-announcement" class="tab-btn px-6 py-3 mr-2 focus:outline-none rounded-t-lg whitespace-nowrap"><i class="fa-solid fa-bullhorn mr-2"></i> Pengumuman</button>
+                        <button onclick="switchSettingsTab('app')" id="tab-btn-app" class="tab-btn px-6 py-3 mr-2 focus:outline-none rounded-t-lg whitespace-nowrap"><i class="fa-solid fa-shield-halved mr-2"></i> Identitas & Keamanan</button>
+                    </div>
+
+                     <!-- TAB DASHBOARD LMS CONTENT -->
+                     <div id="tab-content-lms" class="space-y-6 animate-fade-in">
+                        <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                            <div class="flex justify-between items-center mb-4 border-b pb-4">
+                                <div><h3 class="text-lg font-bold text-gray-800">Tambah Materi Dashboard</h3><p class="text-sm text-gray-500">Materi ini tampil di Home Dashboard (Video/Link).</p></div>
+                                <button onclick="resetLMSForm()" class="text-sm text-gray-500 hover:text-blue-600 flex items-center bg-gray-100 px-3 py-1 rounded-md transition-colors"><i class="fa-solid fa-rotate-left mr-2"></i> Reset Form</button>
                             </div>
-                            <button onclick="logoutLMSAdmin()" class="text-xs bg-red-100 text-red-700 px-3 py-1.5 rounded-lg font-bold hover:bg-red-200">Keluar</button>
+                            <form onsubmit="saveLMS(event)" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <input type="hidden" id="lms-edit-id">
+                                <div class="col-span-1"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Mata Pelajaran <span class="text-red-500">*</span></label><div class="relative"><i class="fa-solid fa-book absolute left-3 top-3.5 text-gray-400"></i><input type="text" id="lms-subject" list="subject-suggestions" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" placeholder="Cth: Matematika" required><datalist id="subject-suggestions"><option value="Matematika"><option value="Bahasa Indonesia"><option value="Bahasa Inggris"><option value="IPA / Sains"><option value="Produktif TJKT"></datalist></div></div>
+                                <div class="col-span-1"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Judul Materi / Topik <span class="text-red-500">*</span></label><input type="text" id="lms-topic" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" placeholder="Cth: Aljabar Linear" required></div>
+                                <div class="md:col-span-2"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Link Sumber Belajar <span class="text-red-500">*</span></label><div class="relative"><i class="fa-solid fa-link absolute left-3 top-3.5 text-gray-400"></i><input type="text" id="lms-url" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" placeholder="URL Youtube, PDF..." required></div></div>
+                                <div><label class="block text-sm font-semibold text-gray-700 mb-1.5">Tipe Materi</label><select id="lms-type" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none bg-white"><option value="video">Video Pembelajaran</option><option value="ebook">E-Book / PDF</option><option value="exam">Ujian Online</option><option value="zoom">Meeting / Zoom</option></select></div>
+                                <div><label class="block text-sm font-semibold text-gray-700 mb-1.5">Nama Guru</label><input type="text" id="lms-teacher" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Cth: Bpk. Budi"></div>
+                                <div class="md:col-span-2 border rounded-lg p-4 bg-gray-50"><div class="flex items-center justify-between cursor-pointer" onclick="document.getElementById('lms-advanced').classList.toggle('hidden');"><span class="text-sm font-bold text-gray-700"><i class="fa-solid fa-clock mr-2"></i> Penjadwalan & Warna</span><i class="fa-solid fa-chevron-down text-gray-400"></i></div><div id="lms-advanced" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-xs font-medium text-gray-600 mb-1">Jam Buka</label><input type="time" id="lms-auto-open" class="w-full px-3 py-2 rounded border border-gray-300 text-sm"></div><div><label class="block text-xs font-medium text-gray-600 mb-1">Jam Tutup</label><input type="time" id="lms-auto-close" class="w-full px-3 py-2 rounded border border-gray-300 text-sm"></div><div><label class="block text-xs font-medium text-gray-600 mb-1">Status</label><select id="lms-status" class="w-full px-3 py-2 rounded border border-gray-300 text-sm"><option value="active">Terbit (Aktif)</option><option value="inactive">Draf</option></select></div><div><label class="block text-xs font-medium text-gray-600 mb-1">Warna</label><select id="lms-color" class="w-full px-3 py-2 rounded border border-gray-300 text-sm"><option value="auto">Otomatis</option><option value="blue">Biru</option><option value="green">Hijau</option><option value="purple">Ungu</option><option value="orange">Oranye</option><option value="red">Merah</option></select></div></div></div>
+                                <div class="md:col-span-2 mt-2"><button type="submit" id="btn-save-lms" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all shadow-lg flex items-center justify-center"><i class="fa-solid fa-plus-circle mr-2 text-lg"></i> Simpan Materi ke Database</button></div>
+                            </form>
                         </div>
+                        <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center"><h3 class="font-bold text-gray-700"><i class="fa-solid fa-list-check mr-2 text-blue-500"></i> Daftar Materi Terbit</h3><div class="flex gap-2"><input type="text" id="lms-search" onkeyup="renderLMSList()" placeholder="Cari..." class="text-xs px-3 py-1.5 border rounded-full hidden md:block"><button onclick="fetchFromDatabase(false)" class="text-xs text-blue-500 bg-blue-50 px-3 py-1.5 rounded-full font-medium"><i class="fa-solid fa-rotate mr-1"></i> Refresh</button></div></div>
+                            <div id="settings-lms-list" class="divide-y divide-gray-100 max-h-[600px] overflow-y-auto custom-scrollbar bg-slate-50"></div>
+                        </div>
+                    </div>
 
+                    <!-- NEW TAB CONTENT: E-LIBRARY ADMIN (Moved from View LMS) -->
+                    <div id="tab-content-lms-admin" class="hidden space-y-6">
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             
                             <!-- Panel 1: Upload Materi -->
@@ -346,43 +386,6 @@
                                     </table>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 4. SETTINGS VIEW -->
-            <div id="view-settings" class="hidden h-full overflow-y-auto p-4 lg:p-6 bg-gray-50 custom-scrollbar">
-                <div class="max-w-7xl mx-auto pb-10">
-                    <!-- Tab Navigation -->
-                    <div class="flex border-b border-gray-200 mb-6 bg-white rounded-t-xl px-2 pt-2 shadow-sm overflow-x-auto">
-                        <button onclick="switchSettingsTab('lms')" id="tab-btn-lms" class="tab-btn active px-6 py-3 mr-2 focus:outline-none rounded-t-lg whitespace-nowrap"><i class="fa-solid fa-graduation-cap mr-2"></i> Manajemen Dashboard</button>
-                        <button onclick="switchSettingsTab('menu')" id="tab-btn-menu" class="tab-btn px-6 py-3 mr-2 focus:outline-none rounded-t-lg whitespace-nowrap"><i class="fa-solid fa-list-check mr-2"></i> Menu Dasar</button>
-                        <button onclick="switchSettingsTab('announcement')" id="tab-btn-announcement" class="tab-btn px-6 py-3 mr-2 focus:outline-none rounded-t-lg whitespace-nowrap"><i class="fa-solid fa-bullhorn mr-2"></i> Pengumuman</button>
-                        <button onclick="switchSettingsTab('app')" id="tab-btn-app" class="tab-btn px-6 py-3 mr-2 focus:outline-none rounded-t-lg whitespace-nowrap"><i class="fa-solid fa-shield-halved mr-2"></i> Identitas & Keamanan</button>
-                    </div>
-
-                     <!-- TAB DASHBOARD LMS CONTENT -->
-                     <div id="tab-content-lms" class="space-y-6 animate-fade-in">
-                        <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-                            <div class="flex justify-between items-center mb-4 border-b pb-4">
-                                <div><h3 class="text-lg font-bold text-gray-800">Tambah Materi Dashboard</h3><p class="text-sm text-gray-500">Materi ini tampil di Home Dashboard (Video/Link).</p></div>
-                                <button onclick="resetLMSForm()" class="text-sm text-gray-500 hover:text-blue-600 flex items-center bg-gray-100 px-3 py-1 rounded-md transition-colors"><i class="fa-solid fa-rotate-left mr-2"></i> Reset Form</button>
-                            </div>
-                            <form onsubmit="saveLMS(event)" class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <input type="hidden" id="lms-edit-id">
-                                <div class="col-span-1"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Mata Pelajaran <span class="text-red-500">*</span></label><div class="relative"><i class="fa-solid fa-book absolute left-3 top-3.5 text-gray-400"></i><input type="text" id="lms-subject" list="subject-suggestions" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" placeholder="Cth: Matematika" required><datalist id="subject-suggestions"><option value="Matematika"><option value="Bahasa Indonesia"><option value="Bahasa Inggris"><option value="IPA / Sains"><option value="Produktif TJKT"></datalist></div></div>
-                                <div class="col-span-1"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Judul Materi / Topik <span class="text-red-500">*</span></label><input type="text" id="lms-topic" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" placeholder="Cth: Aljabar Linear" required></div>
-                                <div class="md:col-span-2"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Link Sumber Belajar <span class="text-red-500">*</span></label><div class="relative"><i class="fa-solid fa-link absolute left-3 top-3.5 text-gray-400"></i><input type="text" id="lms-url" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" placeholder="URL Youtube, PDF..." required></div></div>
-                                <div><label class="block text-sm font-semibold text-gray-700 mb-1.5">Tipe Materi</label><select id="lms-type" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none bg-white"><option value="video">Video Pembelajaran</option><option value="ebook">E-Book / PDF</option><option value="exam">Ujian Online</option><option value="zoom">Meeting / Zoom</option></select></div>
-                                <div><label class="block text-sm font-semibold text-gray-700 mb-1.5">Nama Guru</label><input type="text" id="lms-teacher" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Cth: Bpk. Budi"></div>
-                                <div class="md:col-span-2 border rounded-lg p-4 bg-gray-50"><div class="flex items-center justify-between cursor-pointer" onclick="document.getElementById('lms-advanced').classList.toggle('hidden');"><span class="text-sm font-bold text-gray-700"><i class="fa-solid fa-clock mr-2"></i> Penjadwalan & Warna</span><i class="fa-solid fa-chevron-down text-gray-400"></i></div><div id="lms-advanced" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-xs font-medium text-gray-600 mb-1">Jam Buka</label><input type="time" id="lms-auto-open" class="w-full px-3 py-2 rounded border border-gray-300 text-sm"></div><div><label class="block text-xs font-medium text-gray-600 mb-1">Jam Tutup</label><input type="time" id="lms-auto-close" class="w-full px-3 py-2 rounded border border-gray-300 text-sm"></div><div><label class="block text-xs font-medium text-gray-600 mb-1">Status</label><select id="lms-status" class="w-full px-3 py-2 rounded border border-gray-300 text-sm"><option value="active">Terbit (Aktif)</option><option value="inactive">Draf</option></select></div><div><label class="block text-xs font-medium text-gray-600 mb-1">Warna</label><select id="lms-color" class="w-full px-3 py-2 rounded border border-gray-300 text-sm"><option value="auto">Otomatis</option><option value="blue">Biru</option><option value="green">Hijau</option><option value="purple">Ungu</option><option value="orange">Oranye</option><option value="red">Merah</option></select></div></div></div>
-                                <div class="md:col-span-2 mt-2"><button type="submit" id="btn-save-lms" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all shadow-lg flex items-center justify-center"><i class="fa-solid fa-plus-circle mr-2 text-lg"></i> Simpan Materi ke Database</button></div>
-                            </form>
-                        </div>
-                        <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-                            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center"><h3 class="font-bold text-gray-700"><i class="fa-solid fa-list-check mr-2 text-blue-500"></i> Daftar Materi Terbit</h3><div class="flex gap-2"><input type="text" id="lms-search" onkeyup="renderLMSList()" placeholder="Cari..." class="text-xs px-3 py-1.5 border rounded-full hidden md:block"><button onclick="fetchFromDatabase(false)" class="text-xs text-blue-500 bg-blue-50 px-3 py-1.5 rounded-full font-medium"><i class="fa-solid fa-rotate mr-1"></i> Refresh</button></div></div>
-                            <div id="settings-lms-list" class="divide-y divide-gray-100 max-h-[600px] overflow-y-auto custom-scrollbar bg-slate-50"></div>
                         </div>
                     </div>
 
@@ -584,9 +587,11 @@
 
                 if(result.status === 'success') {
                     lmsLibraryData = result.data;
-                    const isAdminView = !document.getElementById('lms-view-admin').classList.contains('hidden');
-                    if(isAdminView) renderLMSAdminTable();
-                    else renderLMSLibrary(lmsLibraryData);
+                    renderLMSLibrary(lmsLibraryData);
+                    // Jika tab admin terbuka, refresh juga tabel admin
+                    if(!document.getElementById('tab-content-lms-admin').classList.contains('hidden')) {
+                        renderLMSAdminTable();
+                    }
                 }
             } catch (error) {
                 console.error("Error fetching LMS:", error);
@@ -735,13 +740,6 @@
         }
 
         // --- PASSWORD VERIFICATION ---
-        function checkAdminForLMS() {
-            document.getElementById('auth-target').value = 'lms-admin';
-            document.getElementById('password-modal').classList.remove('hidden');
-            document.getElementById('admin-password').value = '';
-            document.getElementById('admin-password').focus();
-        }
-
         function verifyPassword(e) { 
             e.preventDefault(); 
             const inputPass = document.getElementById('admin-password').value;
@@ -751,14 +749,43 @@
             
             if (inputPass === validPass) { 
                 closePasswordModal(); 
-                if (target === 'lms-admin') {
-                    switchLMSTab('admin');
-                } else {
-                    executeSwitch('settings'); 
-                }
+                // Jika password benar, masuk ke settings (otomatis akses admin lms juga terbuka)
+                executeSwitch('settings'); 
             } else { 
                 Swal.fire({ icon: 'error', title: 'Akses Ditolak', text: 'Password Salah.' }); 
             } 
+        }
+
+        // --- HELPER: URL Validator ---
+        function isValidUrl(string) {
+            try {
+                if(!string || string.trim() === '') return false;
+                if(!string.match(/^https?:\/\//)) return false; 
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function showIframeError(isInvalidFormat = false) {
+             const errorDiv = document.getElementById('iframe-error');
+             const errorTitle = document.getElementById('error-title');
+             const errorMessage = document.getElementById('error-message');
+             const errorIcon = document.getElementById('error-icon');
+             
+             errorDiv.classList.remove('hidden');
+             loader.style.display = 'none';
+             
+             if(isInvalidFormat) {
+                 errorTitle.textContent = "URL Tidak Valid (404)";
+                 errorMessage.textContent = "Link yang Anda tuju formatnya salah atau kosong. Pastikan link dimulai dengan https://";
+                 errorIcon.className = "fa-solid fa-link-slash text-4xl text-red-500";
+             } else {
+                 errorTitle.textContent = "Tidak Dapat Memuat Halaman";
+                 errorMessage.textContent = "Website menolak ditampilkan (refused to connect) atau sedang offline.";
+                 errorIcon.className = "fa-solid fa-face-frown text-4xl text-gray-400";
+             }
         }
 
         // --- NAVIGATION LOGIC ---
@@ -789,10 +816,15 @@
             
             ['view-home', 'view-iframe-wrapper', 'view-settings', 'view-lms'].forEach(id => document.getElementById(id).classList.add('hidden'));
             mainIframe.src = ''; playlistSidebar.classList.add('hidden'); playlistToggleBtn.classList.add('hidden');
+            document.getElementById('iframe-error').classList.add('hidden');
 
             if (viewId === 'home') { pageTitle.textContent = 'Dashboard Utama'; document.getElementById('view-home').classList.remove('hidden'); refreshUI(); }
             else if (viewId === 'settings') { pageTitle.textContent = 'Pengaturan Admin'; document.getElementById('view-settings').classList.remove('hidden'); switchSettingsTab('lms'); refreshUI(); }
-            else if (viewId === 'lms') { pageTitle.textContent = 'E-Library / LMS'; document.getElementById('view-lms').classList.remove('hidden'); switchLMSTab('student'); }
+            else if (viewId === 'lms') { 
+                pageTitle.textContent = 'E-Library / LMS'; 
+                document.getElementById('view-lms').classList.remove('hidden'); 
+                renderLMSLibrary(lmsLibraryData);
+            }
             else {
                 const menuItem = menus.find(m => m.id === viewId);
                 if (menuItem) {
@@ -800,46 +832,30 @@
                     if(menuItem.title.includes(':')) cleanTitle = menuItem.title.split(':')[1].trim();
                     pageTitle.textContent = cleanTitle; 
                     document.getElementById('view-iframe-wrapper').classList.remove('hidden'); 
-                    loader.style.display = 'block'; iframeError.classList.add('hidden');
+                    
                     const rawUrl = menuItem.url || "";
                     playlistUrls = rawUrl.split(',').map(u => u.trim()).filter(u => u !== "");
-                    if (playlistUrls.length > 1) { initPlaylist(playlistUrls); } 
-                    else {
+                    
+                    if (playlistUrls.length > 1) { 
+                         initPlaylist(playlistUrls); 
+                    } else {
                         let finalUrl = playlistUrls[0] || "";
-                        if (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be')) finalUrl = getYoutubeEmbedUrl(finalUrl);
-                        externalLink.href = finalUrl; mainIframe.src = finalUrl; 
-                        mainIframe.onload = () => loader.style.display = 'none'; 
-                        mainIframe.onerror = () => { loader.style.display = 'none'; iframeError.classList.remove('hidden'); };
+                        if (!isValidUrl(finalUrl)) {
+                            showIframeError(true); 
+                            externalLink.href = "#";
+                        } else {
+                            loader.style.display = 'block'; 
+                            if (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be')) finalUrl = getYoutubeEmbedUrl(finalUrl);
+                            
+                            externalLink.href = finalUrl; 
+                            mainIframe.src = finalUrl; 
+                            
+                            mainIframe.onload = () => loader.style.display = 'none'; 
+                            mainIframe.onerror = () => { showIframeError(false); };
+                        }
                     }
                 }
             }
-        }
-
-        // --- LMS (E-Library) LOGIC ---
-        function switchLMSTab(tab) {
-            const studentView = document.getElementById('lms-view-student');
-            const adminView = document.getElementById('lms-view-admin');
-            const btnStudent = document.getElementById('btn-lms-student');
-            const btnAdmin = document.getElementById('btn-lms-admin');
-
-            if(tab === 'student') {
-                studentView.classList.remove('hidden');
-                adminView.classList.add('hidden');
-                btnStudent.className = "px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white shadow transition-all";
-                btnAdmin.className = "px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:bg-gray-100 transition-all";
-                renderLMSLibrary(lmsLibraryData); 
-            } else if (tab === 'admin') {
-                studentView.classList.add('hidden');
-                adminView.classList.remove('hidden');
-                btnAdmin.className = "px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white shadow transition-all";
-                btnStudent.className = "px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:bg-gray-100 transition-all";
-                renderLMSAdminTable();
-                updateClassDropdowns(); // Ensure latest classes
-            }
-        }
-
-        function logoutLMSAdmin() {
-            switchLMSTab('student');
         }
 
         function renderLMSLibrary(data) {
@@ -891,6 +907,10 @@
 
         function openPreview(url, title) {
             document.getElementById('preview-title').textContent = title;
+            if(!isValidUrl(url)) {
+                 Swal.fire({ icon: 'error', title: 'Link Rusak', text: 'File ini tidak memiliki URL yang valid (404).' });
+                 return;
+            }
             document.getElementById('preview-frame').src = url;
             document.getElementById('pdf-viewer-modal').classList.remove('hidden');
         }
@@ -920,7 +940,6 @@
 
         // --- RENAME FILE LOGIC ---
         function openRenameModal(id, currentName) {
-            // Hapus ekstensi .pdf di UI agar user tidak double
             let cleanName = currentName.replace(/\.pdf$/i, "");
             document.getElementById('rename-file-id').value = id;
             document.getElementById('rename-file-name').value = cleanName;
@@ -1040,7 +1059,7 @@
             const timeToMinutes = (timeStr) => {
                 if (!timeStr || typeof timeStr !== 'string' || !timeStr.includes(':')) return null;
                 const [h, m] = timeStr.split(':').map(Number);
-                if (isNaN(h) || isNaN(m)) return null; // Additional safety check
+                if (isNaN(h) || isNaN(m)) return null; 
                 return (h * 60) + m;
             };
 
@@ -1149,11 +1168,20 @@
             document.querySelectorAll('.playlist-item').forEach((btn, idx) => { if (idx === index) btn.classList.add('active'); else btn.classList.remove('active'); });
             playlistCounter.textContent = `${index + 1}/${playlistUrls.length}`;
             if (window.innerWidth < 768) togglePlaylist(); 
+            
+            document.getElementById('iframe-error').classList.add('hidden'); // Reset error
+            if (!isValidUrl(url)) {
+                 showIframeError(true);
+                 externalLink.href = "#";
+                 loader.style.display = 'none';
+                 return;
+            }
+
             loader.style.display = 'block';
             if (url.includes('youtube.com') || url.includes('youtu.be')) url = getYoutubeEmbedUrl(url);
             mainIframe.src = url; externalLink.href = playlistUrls[index]; 
             mainIframe.onload = () => loader.style.display = 'none';
-            mainIframe.onerror = () => { loader.style.display = 'none'; iframeError.classList.remove('hidden'); };
+            mainIframe.onerror = () => { showIframeError(false); };
         }
 
         function closePasswordModal() { document.getElementById('password-modal').classList.add('hidden'); }
@@ -1161,8 +1189,21 @@
         function switchSettingsTab(tabName) { 
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
             document.getElementById(`tab-btn-${tabName}`).classList.add('active'); 
-            ['tab-content-menu', 'tab-content-announcement', 'tab-content-lms', 'tab-content-app'].forEach(id => document.getElementById(id).classList.add('hidden'));
-            document.getElementById(`tab-content-${tabName}`).classList.remove('hidden'); 
+            // Sembunyikan semua konten tab di settings
+            ['tab-content-menu', 'tab-content-announcement', 'tab-content-lms', 'tab-content-app', 'tab-content-lms-admin'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.add('hidden');
+            });
+            
+            // Tampilkan tab yang dipilih
+            const targetContent = document.getElementById(`tab-content-${tabName}`);
+            if(targetContent) targetContent.classList.remove('hidden');
+
+            // Khusus tab admin E-Library, refresh tabelnya
+            if (tabName === 'lms-admin') {
+                renderLMSAdminTable();
+                updateClassDropdowns();
+            }
         }
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('mobile-overlay').classList.toggle('hidden'); }
