@@ -482,7 +482,7 @@
         // =============================================================
         // KONFIGURASI: GANTI URL DI BAWAH INI
         // =============================================================
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzHNVxyr44lnnLjSYu-JoRHX9iM8LxJcmsIwamNfRvRDnwkwHyfl98hT9dlju0OmtKk/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw2L9L66eTh2PkaGExnxz4ZcwC-KUOY68ww8w-VKsNfsPhq0hVSdT5AuFriiBHilXFa/exec';
         // =============================================================
 
         // --- STATE MANAGEMENT ---
@@ -1039,15 +1039,16 @@
             const timeToMinutes = (timeStr) => {
                 if (!timeStr || typeof timeStr !== 'string' || !timeStr.includes(':')) return null;
                 const [h, m] = timeStr.split(':').map(Number);
+                if (isNaN(h) || isNaN(m)) return null; // Additional safety check
                 return (h * 60) + m;
             };
 
-            if (menu.auto_open && menu.auto_open !== "") {
+            if (menu.auto_open && menu.auto_open.trim() !== "") {
                 const openMins = timeToMinutes(menu.auto_open);
                 if (openMins !== null && currentTotalMinutes < openMins) return { code: 'not_open_yet', label: `Buka ${menu.auto_open}`, color: 'yellow', isActive: false };
             }
 
-            if (menu.auto_close && menu.auto_close !== "") {
+            if (menu.auto_close && menu.auto_close.trim() !== "") {
                 const closeMins = timeToMinutes(menu.auto_close);
                 if (closeMins !== null && currentTotalMinutes >= closeMins) return { code: 'closed', label: `Tutup ${menu.auto_close}`, color: 'red', isActive: false };
             }
