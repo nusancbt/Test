@@ -522,6 +522,7 @@
 
         async function init() {
             updateClock();
+            setInterval(updateClock, 1000); // Tambahkan ini agar detik berjalan
             if (GOOGLE_SCRIPT_URL.includes('GANTI_DENGAN')) {
                 appLoading.innerHTML = '<div class="text-center p-4"><h3 class="text-xl font-bold text-red-600">Error Konfigurasi</h3><p>Anda belum memasukkan URL Google Script di dalam kode HTML.</p></div>';
                 return;
