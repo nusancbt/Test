@@ -134,7 +134,7 @@
                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User Avatar" class="w-10 h-10 rounded-full bg-slate-600 border-2 border-slate-500">
                 <div>
                     <p class="text-sm font-semibold text-white">Siswa Peserta</p>
-                    <p id="sidebar-app-subtitle" class="text-xs text-slate-400">Kelas TJKT</p>
+                    <p id="sidebar-app-subtitle" class="text-xs text-slate-400">Loading...</p>
                 </div>
             </div>
         </div>
@@ -183,7 +183,7 @@
         <!-- RUNNING TEXT / MARQUEE -->
         <div id="marquee-container" class="bg-blue-600 text-white text-sm py-1.5 overflow-hidden whitespace-nowrap hidden">
             <div id="marquee-text" class="inline-block animate-marquee pl-[100%]">
-                Selamat Datang di Aplikasi Ujian Online. Harap menjaga ketertiban.
+                <!-- Text will be injected here -->
             </div>
         </div>
         <style>
@@ -482,7 +482,7 @@
         // =============================================================
         // KONFIGURASI: GANTI URL DI BAWAH INI
         // =============================================================
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxv3Ok-YgBOg4rLl7la3LGQXvjNIxAj049eQAOCS5DKaisasQvTgD4vqgTYIWheHIPk/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzHNVxyr44lnnLjSYu-JoRHX9iM8LxJcmsIwamNfRvRDnwkwHyfl98hT9dlju0OmtKk/exec';
         // =============================================================
 
         // --- STATE MANAGEMENT ---
@@ -611,7 +611,10 @@
                          classes = data.classes;
                          updateClassDropdowns();
                     }
-                    if(data.settings) appSettings = data.settings;
+                    if(data.settings) {
+                        appSettings = data.settings;
+                        applyGlobalSettings(); // Langsung update UI identity
+                    }
 
                     refreshUI();
                     Swal.fire("Berhasil", "Data berhasil disimpan!", "success");
@@ -700,6 +703,8 @@
             }
             if(appSettings.app_subtitle) {
                 document.getElementById('sidebar-app-subtitle').textContent = appSettings.app_subtitle;
+            } else {
+                 document.getElementById('sidebar-app-subtitle').textContent = "Dashboard Siswa";
             }
             
             const marqueeContainer = document.getElementById('marquee-container');
