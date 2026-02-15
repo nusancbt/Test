@@ -154,7 +154,7 @@
       color: #93c5fd;
     }
   </style>
-  <style>@view-transition { navigation: auto; }</style>
+  <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
  </head>
  <body class="h-full bg-gradient-main text-white overflow-auto">
   <div id="app" class="min-h-full w-full"><!-- Modal: Lengkapi Identitas -->
@@ -508,84 +508,19 @@
     function getQuestions() {
       const soalFromDB = getSoal();
       
-      if (soalFromDB.length > 0) {
-        return soalFromDB.map(s => ({
-          no: s.nomor_soal,
-          question: s.soal_text,
-          mapel: s.nama_mapel,
-          tipe_soal: s.tipe_soal || 'essay',
-          pilihan_a: s.pilihan_a,
-          pilihan_b: s.pilihan_b,
-          pilihan_c: s.pilihan_c,
-          pilihan_d: s.pilihan_d,
-          pilihan_e: s.pilihan_e,
-          jawaban_benar: s.jawaban_benar
-        }));
-      }
-      
-      // Fallback to default questions if no data in bank soal
-      return [
-        {
-          no: 1,
-          question: "Jelaskan pengertian jaringan komputer dan sebutkan minimal 3 manfaat dari penggunaan jaringan komputer dalam kehidupan sehari-hari!",
-          mapel: "TKJ",
-          tipe_soal: "essay"
-        },
-        {
-          no: 2,
-          question: "Sebutkan dan jelaskan 4 jenis topologi jaringan beserta kelebihan dan kekurangan masing-masing!",
-          mapel: "TKJ",
-          tipe_soal: "essay"
-        },
-        {
-          no: 3,
-          question: "Apa yang dimaksud dengan IP Address? Jelaskan perbedaan antara IP Address versi 4 (IPv4) dan versi 6 (IPv6)!",
-          mapel: "TKJ",
-          tipe_soal: "essay"
-        },
-        {
-          no: 4,
-          question: "Jelaskan fungsi dari perangkat-perangkat jaringan berikut: Router, Switch, Hub, dan Access Point!",
-          mapel: "TKJ",
-          tipe_soal: "essay"
-        },
-        {
-          no: 5,
-          question: "Apa yang dimaksud dengan OSI Layer? Sebutkan 7 lapisan OSI beserta fungsi masing-masing lapisan!",
-          mapel: "TKJ",
-          tipe_soal: "essay"
-        },
-        {
-          no: 6,
-          question: "Jelaskan perbedaan antara jaringan LAN, MAN, dan WAN. Berikan contoh penggunaan masing-masing!",
-          mapel: "TKJ",
-          tipe_soal: "essay"
-        },
-        {
-          no: 7,
-          question: "Apa yang dimaksud dengan protokol jaringan? Sebutkan dan jelaskan 3 contoh protokol yang sering digunakan!",
-          mapel: "TKJ",
-          tipe_soal: "essay"
-        },
-        {
-          no: 8,
-          question: "Jelaskan langkah-langkah dalam melakukan crimping kabel UTP dengan konfigurasi straight dan crossover!",
-          mapel: "TKJ",
-          tipe_soal: "essay"
-        },
-        {
-          no: 9,
-          question: "Apa yang dimaksud dengan subnetting? Jelaskan cara menghitung subnet mask untuk membagi jaringan!",
-          mapel: "TKJ",
-          tipe_soal: "essay"
-        },
-        {
-          no: 10,
-          question: "Jelaskan konsep keamanan jaringan dan sebutkan minimal 5 ancaman keamanan jaringan beserta cara pencegahannya!",
-          mapel: "TKJ",
-          tipe_soal: "essay"
-        }
-      ];
+      return soalFromDB.map(s => ({
+        no: s.nomor_soal,
+        question: s.soal_text,
+        mapel: s.nama_mapel,
+        tipe_soal: s.tipe_soal || 'essay',
+        pilihan_a: s.pilihan_a,
+        pilihan_b: s.pilihan_b,
+        pilihan_c: s.pilihan_c,
+        pilihan_d: s.pilihan_d,
+        pilihan_e: s.pilihan_e,
+        jawaban_benar: s.jawaban_benar,
+        __backendId: s.__backendId
+      }));
     }
     
     // Default config
@@ -2245,29 +2180,24 @@
       if (!record) return;
       
       const itemElement = document.querySelector(`[data-id="${backendId}"]`);
+      if (!itemElement) return;
+      
       const originalContent = itemElement.innerHTML;
       
       itemElement.innerHTML = `
-        <div class="flex items-center justify-between py-4">
-          <div class="flex items-center gap-4">
-            <svg class="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
             </svg>
-            <span class="text-white font-semibold">Hapus data ujian "${record.judul_ujian}"?</span>
+            <span class="text-white font-semibold text-sm">Hapus "${record.judul_ujian}"?</span>
           </div>
           <div class="flex gap-2">
-            <button onclick="cancelDeleteUjian('${backendId}', \`${originalContent.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm font-semibold transition-all">Batal</button>
-            <button onclick="confirmDeleteUjian('${backendId}')" class="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-sm font-semibold transition-all">Ya, Hapus</button>
+            <button class="px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm font-semibold transition-all" onclick="this.closest('.p-6').innerHTML = \`${originalContent.replace(/`/g, '\\`')}\`">Batal</button>
+            <button class="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-sm font-semibold transition-all" onclick="confirmDeleteUjian('${backendId}')">Ya, Hapus</button>
           </div>
         </div>
       `;
-      
-      itemElement.dataset.originalContent = originalContent;
-    }
-    
-    function cancelDeleteUjian(backendId, originalContent) {
-      const itemElement = document.querySelector(`[data-id="${backendId}"]`);
-      itemElement.innerHTML = originalContent;
     }
     
     async function confirmDeleteUjian(backendId) {
@@ -2275,7 +2205,9 @@
       if (!record || !window.dataSdk) return;
       
       const itemElement = document.querySelector(`[data-id="${backendId}"]`);
-      itemElement.innerHTML = '<div class="flex items-center justify-center py-8"><svg class="w-6 h-6 animate-spin text-blue-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
+      if (!itemElement) return;
+      
+      itemElement.innerHTML = '<div class="flex items-center justify-center py-4"><svg class="w-6 h-6 animate-spin text-blue-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
       
       const result = await window.dataSdk.delete(record);
       if (result.isOk) {
@@ -2758,9 +2690,12 @@
                       <td class="py-4 px-6 text-sm">${statusBadge}</td>
                       <td class="py-4 px-6 text-sm text-slate-300">${waktuMulai}</td>
                       <td class="py-4 px-6 text-sm text-slate-300">${waktuSelesai}</td>
-                      <td class="py-4 px-6 text-sm">
+                      <td class="py-4 px-6 text-sm flex gap-2">
                         <button onclick="viewStudentDetail('${record.__backendId}')" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-semibold transition-all">
-                          Lihat Detail
+                          Detail
+                        </button>
+                        <button onclick="deleteStudent('${record.__backendId}')" class="px-3 py-1 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-semibold transition-all">
+                          Hapus
                         </button>
                       </td>
                     </tr>
@@ -3550,25 +3485,22 @@
       if (!record) return;
       
       const itemElement = document.querySelector(`[data-id="${backendId}"]`);
+      if (!itemElement) return;
+      
       const originalContent = itemElement.innerHTML;
       
       itemElement.innerHTML = `
         <div class="flex flex-col items-center justify-center py-4 gap-3">
-          <svg class="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
           </svg>
           <span class="text-white font-semibold text-sm text-center">Hapus ${record.nama_mapel}?</span>
           <div class="flex gap-2 w-full">
-            <button onclick="cancelDeleteMapel('${backendId}', \`${originalContent.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-xs font-semibold transition-all">Batal</button>
-            <button onclick="confirmDeleteMapel('${backendId}')" class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-semibold transition-all">Hapus</button>
+            <button class="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-xs font-semibold transition-all" onclick="this.closest('[data-id]').innerHTML = \`${originalContent.replace(/`/g, '\\`')}\`">Batal</button>
+            <button class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-semibold transition-all" onclick="confirmDeleteMapel('${backendId}')">Hapus</button>
           </div>
         </div>
       `;
-    }
-    
-    function cancelDeleteMapel(backendId, originalContent) {
-      const itemElement = document.querySelector(`[data-id="${backendId}"]`);
-      itemElement.innerHTML = originalContent;
     }
     
     async function confirmDeleteMapel(backendId) {
@@ -3576,7 +3508,9 @@
       if (!record || !window.dataSdk) return;
       
       const itemElement = document.querySelector(`[data-id="${backendId}"]`);
-      itemElement.innerHTML = '<div class="flex items-center justify-center py-8"><svg class="w-6 h-6 animate-spin text-blue-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
+      if (!itemElement) return;
+      
+      itemElement.innerHTML = '<div class="flex items-center justify-center py-4"><svg class="w-6 h-6 animate-spin text-blue-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
       
       const result = await window.dataSdk.delete(record);
       if (result.isOk) {
@@ -3747,25 +3681,22 @@
       if (!record) return;
       
       const itemElement = document.querySelector(`[data-id="${backendId}"]`);
+      if (!itemElement) return;
+      
       const originalContent = itemElement.innerHTML;
       
       itemElement.innerHTML = `
         <div class="flex flex-col items-center justify-center py-4 gap-3">
-          <svg class="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
           </svg>
           <span class="text-white font-semibold text-sm text-center">Hapus ${record.nama_jurusan}?</span>
           <div class="flex gap-2 w-full">
-            <button onclick="cancelDeleteJurusan('${backendId}', \`${originalContent.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-xs font-semibold transition-all">Batal</button>
-            <button onclick="confirmDeleteJurusan('${backendId}')" class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-semibold transition-all">Hapus</button>
+            <button class="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-xs font-semibold transition-all" onclick="this.closest('[data-id]').innerHTML = \`${originalContent.replace(/`/g, '\\`')}\`">Batal</button>
+            <button class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-semibold transition-all" onclick="confirmDeleteJurusan('${backendId}')">Hapus</button>
           </div>
         </div>
       `;
-    }
-    
-    function cancelDeleteJurusan(backendId, originalContent) {
-      const itemElement = document.querySelector(`[data-id="${backendId}"]`);
-      itemElement.innerHTML = originalContent;
     }
     
     async function confirmDeleteJurusan(backendId) {
@@ -3773,7 +3704,9 @@
       if (!record || !window.dataSdk) return;
       
       const itemElement = document.querySelector(`[data-id="${backendId}"]`);
-      itemElement.innerHTML = '<div class="flex items-center justify-center py-8"><svg class="w-6 h-6 animate-spin text-blue-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
+      if (!itemElement) return;
+      
+      itemElement.innerHTML = '<div class="flex items-center justify-center py-4"><svg class="w-6 h-6 animate-spin text-blue-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
       
       const result = await window.dataSdk.delete(record);
       if (result.isOk) {
@@ -3944,25 +3877,22 @@
       if (!record) return;
       
       const itemElement = document.querySelector(`[data-id="${backendId}"]`);
+      if (!itemElement) return;
+      
       const originalContent = itemElement.innerHTML;
       
       itemElement.innerHTML = `
         <div class="flex flex-col items-center justify-center py-4 gap-3">
-          <svg class="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
           </svg>
           <span class="text-white font-semibold text-sm text-center">Hapus ${record.nama_kelas}?</span>
           <div class="flex gap-2 w-full">
-            <button onclick="cancelDeleteKelas('${backendId}', \`${originalContent.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-xs font-semibold transition-all">Batal</button>
-            <button onclick="confirmDeleteKelas('${backendId}')" class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-semibold transition-all">Hapus</button>
+            <button class="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-xs font-semibold transition-all" onclick="this.closest('[data-id]').innerHTML = \`${originalContent.replace(/`/g, '\\`')}\`">Batal</button>
+            <button class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-semibold transition-all" onclick="confirmDeleteKelas('${backendId}')">Hapus</button>
           </div>
         </div>
       `;
-    }
-    
-    function cancelDeleteKelas(backendId, originalContent) {
-      const itemElement = document.querySelector(`[data-id="${backendId}"]`);
-      itemElement.innerHTML = originalContent;
     }
     
     async function confirmDeleteKelas(backendId) {
@@ -3970,7 +3900,9 @@
       if (!record || !window.dataSdk) return;
       
       const itemElement = document.querySelector(`[data-id="${backendId}"]`);
-      itemElement.innerHTML = '<div class="flex items-center justify-center py-8"><svg class="w-6 h-6 animate-spin text-blue-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
+      if (!itemElement) return;
+      
+      itemElement.innerHTML = '<div class="flex items-center justify-center py-4"><svg class="w-6 h-6 animate-spin text-blue-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
       
       const result = await window.dataSdk.delete(record);
       if (result.isOk) {
@@ -4026,14 +3958,97 @@
       showDetailModal(record);
     }
     
-    // Filter rekap table
-    function filterRekapTable() {
-      const searchValue = document.getElementById('search-siswa').value.toLowerCase();
-      const filterKelas = document.getElementById('filter-kelas').value;
-      const filterStatus = document.getElementById('filter-status').value;
+    async function deleteStudent(backendId) {
+      const record = allRecords.find(r => r.__backendId === backendId);
+      if (!record || !window.dataSdk) return;
+      
+      // Find the row with data attribute
+      const tbody = document.querySelector('#admin-content tbody');
+      if (!tbody) return;
+      
+      const rows = tbody.querySelectorAll('tr');
+      let targetRow = null;
+      
+      rows.forEach(row => {
+        const deleteBtn = row.querySelector(`button[onclick*="deleteStudent"]`);
+        if (deleteBtn && deleteBtn.getAttribute('onclick').includes(backendId)) {
+          targetRow = row;
+        }
+      });
+      
+      if (!targetRow) return;
+      
+      const td = targetRow.querySelector('td:last-child');
+      
+      // Store original state
+      td.innerHTML = `
+        <div class="flex flex-col gap-2">
+          <span class="text-yellow-400 text-xs font-semibold">Hapus ${record.nama}?</span>
+          <div class="flex gap-2 w-full">
+            <button class="flex-1 px-2 py-1 bg-slate-600 hover:bg-slate-500 rounded text-xs font-semibold transition-all" onclick="cancelDeleteStudent('${backendId}')">
+              Batal
+            </button>
+            <button class="flex-1 px-2 py-1 bg-red-600 hover:bg-red-500 rounded text-xs font-semibold transition-all" onclick="confirmDeleteStudent('${backendId}')">
+              Ya, Hapus
+            </button>
+          </div>
+        </div>
+      `;
+      
+      // Store original HTML in data attribute
+      targetRow.dataset.originalHtml = td.innerHTML;
+    }
+    
+    function cancelDeleteStudent(backendId) {
+      const tbody = document.querySelector('#admin-content tbody');
+      if (!tbody) return;
+      
+      const rows = tbody.querySelectorAll('tr');
+      rows.forEach(row => {
+        const deleteBtn = row.querySelector(`button[onclick*="deleteStudent"]`);
+        if (deleteBtn && deleteBtn.getAttribute('onclick').includes(backendId)) {
+          filterRekapTable();
+        }
+      });
+    }
+    
+    async function confirmDeleteStudent(backendId) {
+      const record = allRecords.find(r => r.__backendId === backendId);
+      if (!record || !window.dataSdk) return;
       
       const tbody = document.querySelector('#admin-content tbody');
       if (!tbody) return;
+      
+      const rows = tbody.querySelectorAll('tr');
+      let targetRow = null;
+      
+      rows.forEach(row => {
+        const deleteBtn = row.querySelector(`button[onclick*="confirmDeleteStudent"]`);
+        if (deleteBtn && deleteBtn.getAttribute('onclick').includes(backendId)) {
+          targetRow = row;
+        }
+      });
+      
+      if (targetRow) {
+        const td = targetRow.querySelector('td:last-child');
+        td.innerHTML = '<div class="flex items-center justify-center py-2"><svg class="w-4 h-4 animate-spin text-blue-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
+      }
+      
+      const result = await window.dataSdk.delete(record);
+      if (result.isOk) {
+        setTimeout(() => filterRekapTable(), 500);
+      } else {
+        document.getElementById('warning-message').textContent = 'Gagal menghapus data siswa.';
+        showModal('modal-warning');
+        filterRekapTable();
+      }
+    }
+    
+    // Filter rekap table
+    function filterRekapTable() {
+      const searchValue = document.getElementById('search-siswa')?.value.toLowerCase() || '';
+      const filterKelas = document.getElementById('filter-kelas')?.value || '';
+      const filterStatus = document.getElementById('filter-status')?.value || '';
       
       const students = getStudents();
       
@@ -4054,11 +4069,18 @@
       const selesai = filteredStudents.filter(r => r.status === 'Selesai').length;
       const progress = filteredStudents.filter(r => r.status === 'Sedang Mengerjakan').length;
       
-      document.getElementById('rekap-stat-total').textContent = total;
-      document.getElementById('rekap-stat-selesai').textContent = selesai;
-      document.getElementById('rekap-stat-progress').textContent = progress;
+      const statTotal = document.getElementById('rekap-stat-total');
+      const statSelesai = document.getElementById('rekap-stat-selesai');
+      const statProgress = document.getElementById('rekap-stat-progress');
+      
+      if (statTotal) statTotal.textContent = total;
+      if (statSelesai) statSelesai.textContent = selesai;
+      if (statProgress) statProgress.textContent = progress;
       
       // Render filtered table
+      const tbody = document.querySelector('#admin-content tbody');
+      if (!tbody) return;
+      
       if (filteredStudents.length === 0) {
         tbody.innerHTML = `
           <tr>
@@ -4100,9 +4122,12 @@
               <td class="py-4 px-6 text-sm">${statusBadge}</td>
               <td class="py-4 px-6 text-sm text-slate-300">${waktuMulai}</td>
               <td class="py-4 px-6 text-sm text-slate-300">${waktuSelesai}</td>
-              <td class="py-4 px-6 text-sm">
+              <td class="py-4 px-6 text-sm flex gap-2">
                 <button onclick="viewStudentDetail('${record.__backendId}')" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-semibold transition-all">
-                  Lihat Detail
+                  Detail
+                </button>
+                <button onclick="deleteStudent('${record.__backendId}')" class="px-3 py-1 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-semibold transition-all">
+                  Hapus
                 </button>
               </td>
             </tr>
@@ -4113,11 +4138,16 @@
     
     // Reset filter
     function resetRekapFilter() {
-      document.getElementById('search-siswa').value = '';
-      document.getElementById('filter-kelas').value = '';
-      document.getElementById('filter-status').value = '';
+      const searchEl = document.getElementById('search-siswa');
+      const filterKelasEl = document.getElementById('filter-kelas');
+      const filterStatusEl = document.getElementById('filter-status');
+      
+      if (searchEl) searchEl.value = '';
+      if (filterKelasEl) filterKelasEl.value = '';
+      if (filterStatusEl) filterStatusEl.value = '';
+      
       filterRekapTable();
     }
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ce5dd9126d7f916',t:'MTc3MTE2OTYyNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ce5f72b756c080f',t:'MTc3MTE3MDY3NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
