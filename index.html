@@ -189,13 +189,13 @@
             <button onclick="openRosterModal()" class="admin-only px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5">
                 <i class="fa-solid fa-users-gear"></i> Kelola Siswa
             </button>
-            <button onclick="openCloudConfigModal()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5">
+            <button onclick="openCloudConfigModal()" class="admin-only px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5">
                 <i class="fa-solid fa-file-csv"></i> Pengaturan Google Sheets
             </button>
             <button onclick="openGasModal()" class="admin-only px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5">
                 <i class="fa-solid fa-code"></i> Script Google Apps
             </button>
-            <button onclick="exportToCSV()" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5">
+            <button onclick="exportToCSV()" class="admin-only px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5">
                 <i class="fa-solid fa-file-excel"></i> Export CSV
             </button>
             <button onclick="syncToGoogleSheets(true)" class="admin-only px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5">
@@ -450,7 +450,7 @@
 
                 <div class="bg-emerald-50 p-3.5 rounded-xl border border-emerald-200">
                     <label class="block font-bold text-emerald-900 mb-1.5">URL Web App Google Apps Script Anda:</label>
-                    <input type="text" id="customGasUrlInput" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full border border-emerald-300 rounded-lg p-2 font-mono text-[11px] focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <input type="text" id="customGasUrlInput" value="https://script.google.com/macros/s/AKfycby7fchoLUiqoNumSlKIpeUa_3Q0Fw3ZQCk9zbN1FUmfgziSTX5BHc-mMWYLU3dQpLzD/exec" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full border border-emerald-300 rounded-lg p-2 font-mono text-[11px] focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <p class="text-[10px] text-emerald-700 mt-1">
                         *Dapatkan Web App URL dari deployment Apps Script Google Sheets Anda (Atur akses: "Anyone" / "Siapa saja").
                     </p>
@@ -665,7 +665,7 @@ function doPost(e) {
         let studentsList = [];
         let attendanceMap = {}; // Format: { "month_studentId_day": "H" / "S" / "I" / "A" }
         let notesMap = {}; // Format: { "month_studentId_note": "catatan" }
-        let gasWebUrl = "";
+        let gasWebUrl = "https://script.google.com/macros/s/AKfycby7fchoLUiqoNumSlKIpeUa_3Q0Fw3ZQCk9zbN1FUmfgziSTX5BHc-mMWYLU3dQpLzD/exec";
         let isAdminMode = false;
         let syncDebounceTimer = null;
 
@@ -718,6 +718,8 @@ function doPost(e) {
             const savedUrl = localStorage.getItem('smks_gas_url');
             if (savedUrl) {
                 gasWebUrl = savedUrl;
+            }
+            if (gasWebUrl) {
                 document.getElementById('customGasUrlInput').value = gasWebUrl;
             }
         }
@@ -936,6 +938,13 @@ function doPost(e) {
             for (let i = 1; i <= 31; i++) {
                 html += `<th onclick="fillHadirByDate(${i})" class="date-header p-1 border-r border-blue-800 min-w-[24px] max-w-[28px]" title="Klik untuk isi semua HADIR di tanggal ${i}">${i}</th>`;
             }
+            // Tambahkan sub-header H, A, S, I di bawah kolom JUMLAH
+            html += `
+                <th class="p-1 border-r border-blue-800 bg-blue-950 min-w-[28px]" title="Hadir">H</th>
+                <th class="p-1 border-r border-blue-800 bg-blue-950 min-w-[28px]" title="Alpa">A</th>
+                <th class="p-1 border-r border-blue-800 bg-blue-950 min-w-[28px]" title="Sakit">S</th>
+                <th class="p-1 border-r border-blue-800 bg-blue-950 min-w-[28px]" title="Izin">I</th>
+            `;
             row.innerHTML = html;
         }
 
