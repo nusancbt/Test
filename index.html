@@ -189,9 +189,6 @@
             <button onclick="openRosterModal()" class="admin-only px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5">
                 <i class="fa-solid fa-users-gear"></i> Kelola Siswa
             </button>
-            <button onclick="openCloudConfigModal()" class="admin-only px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5">
-                <i class="fa-solid fa-file-csv"></i> Pengaturan Google Sheets
-            </button>
             <button onclick="openGasModal()" class="admin-only px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5">
                 <i class="fa-solid fa-code"></i> Script Google Apps
             </button>
@@ -431,50 +428,6 @@
         </div>
     </div>
 
-    <!-- Modal 2: Google Sheets Cloud Config Modal -->
-    <div id="cloudConfigModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-6 flex flex-col">
-            <div class="flex justify-between items-center pb-3 border-b">
-                <h3 class="text-lg font-bold text-emerald-900 flex items-center gap-2">
-                    <i class="fa-solid fa-file-excel text-emerald-600"></i> Pengaturan Cloud Google Sheets API
-                </h3>
-                <button onclick="closeCloudConfigModal()" class="text-gray-400 hover:text-gray-600 p-1">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
-            </div>
-
-            <div class="py-4 text-xs space-y-4 text-gray-700">
-                <p>
-                    Hubungkan aplikasi ini secara langsung ke **Google Sheets** sebagai Cloud Database Online utama Anda.
-                </p>
-
-                <div class="bg-emerald-50 p-3.5 rounded-xl border border-emerald-200">
-                    <label class="block font-bold text-emerald-900 mb-1.5">URL Web App Google Apps Script Anda:</label>
-                    <input type="text" id="customGasUrlInput" value="https://script.google.com/macros/s/AKfycby7fchoLUiqoNumSlKIpeUa_3Q0Fw3ZQCk9zbN1FUmfgziSTX5BHc-mMWYLU3dQpLzD/exec" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full border border-emerald-300 rounded-lg p-2 font-mono text-[11px] focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    <p class="text-[10px] text-emerald-700 mt-1">
-                        *Dapatkan Web App URL dari deployment Apps Script Google Sheets Anda (Atur akses: "Anyone" / "Siapa saja").
-                    </p>
-                </div>
-
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <div class="font-bold text-slate-800 mb-1">Status Database Cloud:</div>
-                    <div id="modalCloudStatusInfo" class="text-slate-600 font-mono text-[11px]">Memeriksa koneksi...</div>
-                </div>
-            </div>
-
-            <div class="pt-3 border-t flex justify-between items-center">
-                <button onclick="openGasModal()" class="text-purple-600 hover:underline text-xs font-semibold">
-                    <i class="fa-solid fa-code"></i> Lihat Script App
-                </button>
-                <div class="flex gap-2">
-                    <button onclick="saveGoogleSheetsConfig()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl text-xs shadow-md transition">
-                        Simpan & Hubungkan Google Sheets
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Modal 3: Google Apps Script Modal Code Setup -->
     <div id="gasModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full p-6 max-h-[90vh] flex flex-col">
@@ -495,7 +448,7 @@
                         <li>Hapus semua kode lama, lalu <strong>Paste</strong> kode JavaScript di bawah ini.</li>
                         <li>Klik tombol <strong>Deploy &gt; Web app baru</strong>.</li>
                         <li>Setel <em>Execute as: Me</em> dan <em>Who has access: Anyone (Siapa Saja)</em>.</li>
-                        <li>Salin Web App URL yang dihasilkan ke menu <strong>Pengaturan Google Sheets</strong> aplikasi ini.</li>
+                        <li>Simpan Web App URL jika Anda ingin menghubungkan aplikasi.</li>
                     </ol>
                 </div>
 
@@ -638,34 +591,13 @@ function doPost(e) {
 
     <script>
         // Initial Student List for Kelas X TJKT 3
-        const INITIAL_STUDENTS = [
-            { id: 101, name: "ACHMAD FADILLAH", gender: "L" },
-            { id: 102, name: "ADINDA PUTRI MAHESHWARI", gender: "P" },
-            { id: 103, name: "ALVARO RIZKY PRATAMA", gender: "L" },
-            { id: 104, name: "AMALIA NUR HASANAH", gender: "P" },
-            { id: 105, name: "ANDIKA WIJAYA", gender: "L" },
-            { id: 106, name: "ANNISA RACHMAWATI", gender: "P" },
-            { id: 107, name: "BAYU SETIAWAN", gender: "L" },
-            { id: 108, name: "BINTANG RAMADHAN", gender: "L" },
-            { id: 109, name: "CITRA DEWI", gender: "P" },
-            { id: 110, name: "DANIEL KUSUMA", gender: "L" },
-            { id: 111, name: "DINA MARIANA", gender: "P" },
-            { id: 112, name: "FACHRI ALAMSYAH", gender: "L" },
-            { id: 113, name: "FARAH NADIA", gender: "P" },
-            { id: 114, name: "GILANG RAMADHAN", gender: "L" },
-            { id: 115, name: "INDAH PERMATASARI", gender: "P" },
-            { id: 116, name: "MUHAMMAD ARIF BUDIMAN", gender: "L" },
-            { id: 117, name: "MUHAMMAD RIZKY", gender: "L" },
-            { id: 118, name: "NABILA ZAHRA", gender: "P" },
-            { id: 119, name: "NICHOLAS SAPUTRA", gender: "L" },
-            { id: 120, name: "SITI RAHMAWATI", gender: "P" }
-        ];
+       
 
         // Global State Variables
         let studentsList = [];
         let attendanceMap = {}; // Format: { "month_studentId_day": "H" / "S" / "I" / "A" }
         let notesMap = {}; // Format: { "month_studentId_note": "catatan" }
-        let gasWebUrl = "https://script.google.com/macros/s/AKfycby7fchoLUiqoNumSlKIpeUa_3Q0Fw3ZQCk9zbN1FUmfgziSTX5BHc-mMWYLU3dQpLzD/exec";
+        let gasWebUrl = "https://script.google.com/macros/s/AKfycbzTP46x25X9mt5j4pVSljEUJLh888ia35IxV5fVrr0BsXmae3g-JPTsR2_Ne9Ij-8if/exec";
         let isAdminMode = false;
         let syncDebounceTimer = null;
 
@@ -718,9 +650,6 @@ function doPost(e) {
             const savedUrl = localStorage.getItem('smks_gas_url');
             if (savedUrl) {
                 gasWebUrl = savedUrl;
-            }
-            if (gasWebUrl) {
-                document.getElementById('customGasUrlInput').value = gasWebUrl;
             }
         }
 
@@ -867,7 +796,7 @@ function doPost(e) {
 
         async function syncToGoogleSheets(showNotification = true) {
             if (!gasWebUrl) {
-                if (showNotification) showToast("URL Google Apps Script belum diatur! Buka menu Pengaturan Google Sheets.", "error");
+                if (showNotification) showToast("URL Google Apps Script belum diatur atau dinonaktifkan.", "error");
                 return;
             }
 
@@ -1185,29 +1114,6 @@ function doPost(e) {
                     showToast("PIN yang Anda masukkan salah!", "error");
                 }
             }
-        }
-
-        // Cloud Config Modal Functions
-        function openCloudConfigModal() {
-            document.getElementById('cloudConfigModal').classList.remove('hidden');
-        }
-
-        function closeCloudConfigModal() {
-            document.getElementById('cloudConfigModal').classList.add('hidden');
-        }
-
-        function saveGoogleSheetsConfig() {
-            const urlInput = document.getElementById('customGasUrlInput').value.trim();
-            if (urlInput && !urlInput.startsWith('https://script.google.com/')) {
-                showToast("URL tidak valid! Harus dimulai dengan https://script.google.com/", "error");
-                return;
-            }
-
-            gasWebUrl = urlInput;
-            localStorage.setItem('smks_gas_url', gasWebUrl);
-            showToast("Konfigurasi Google Sheets disimpan! Menghubungkan...", "success");
-            closeCloudConfigModal();
-            initDatabaseConnection();
         }
 
         function openGasModal() {
