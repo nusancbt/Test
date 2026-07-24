@@ -11,6 +11,28 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <!-- Firebase SDK Imports for Cloud Database -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Expose Firebase tools safely to global window scope
+        window.FirebaseSDK = {
+            initializeApp,
+            getAuth,
+            signInAnonymously,
+            signInWithCustomToken,
+            getFirestore,
+            doc,
+            setDoc,
+            onSnapshot,
+            collection
+        };
+
+        window.dispatchEvent(new Event('firebase-sdk-ready'));
+    </script>
+
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -147,8 +169,14 @@
                 <i class="fa-solid fa-graduation-cap text-xl"></i>
             </div>
             <div>
-                <h1 class="font-bold text-gray-800 text-lg leading-tight">Aplikasi Absensi SMKS Nusantara 1 Ciputat</h1>
-                <p class="text-xs text-gray-500">Sistem Pencatatan Kehadiran Siswa Digital v.4</p>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-bold text-gray-800 text-lg leading-tight">Absensi Online SMKS Nusantara 1</h1>
+                    <!-- Online Status Badge -->
+                    <span id="cloudStatusBadge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Connecting...
+                    </span>
+                </div>
+                <p class="text-xs text-gray-500">Sistem Pencatatan Kehadiran Siswa Digital (Cloud Database Online)</p>
             </div>
         </div>
 
@@ -157,10 +185,13 @@
                 <i class="fa-solid fa-lock"></i> Mode: Viewer
             </button>
             <button onclick="fillAllHadir()" class="admin-only px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5">
-                <i class="fa-solid fa-check-double"></i> Hadir Semua (1 Bulan)
+                <i class="fa-solid fa-check-double"></i> Hadir Semua
             </button>
             <button onclick="openRosterModal()" class="admin-only px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5">
                 <i class="fa-solid fa-users-gear"></i> Kelola Siswa
+            </button>
+            <button onclick="openCloudConfigModal()" class="px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5">
+                <i class="fa-solid fa-cloud"></i> Cloud Config
             </button>
             <button onclick="openGasModal()" class="admin-only px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5">
                 <i class="fa-solid fa-code"></i> Script Google Apps
@@ -180,10 +211,9 @@
     <!-- Main Print / Poster Card Container -->
     <div class="print-card max-w-7xl mx-auto bg-sky-100 rounded-3xl shadow-2xl border-4 border-white overflow-hidden p-3 sm:p-6 relative">
         
-        <!-- Header Banner Section (Matching Poster Image) -->
+        <!-- Header Banner Section -->
         <div class="relative bg-gradient-to-b from-sky-400 via-sky-300 to-sky-200 rounded-2xl p-4 sm:p-6 mb-4 border-2 border-sky-300 shadow-inner overflow-hidden">
             
-            <!-- School Decor Graphics / Elements -->
             <div class="flex flex-col md:flex-row items-center justify-between gap-4 relative z-10">
                 
                 <!-- Left: School Graphic Mock & Title -->
@@ -195,7 +225,6 @@
                     </div>
 
                     <div>
-                        <!-- Main 3D Poster Title -->
                         <h1 class="font-fredoka text-2xl sm:text-4xl md:text-5xl font-black tracking-wide text-shadow-3d uppercase">
                             ABSENSI SISWA
                         </h1>
@@ -211,15 +240,13 @@
                         SMKS Nusantara 1 Ciputat
                     </div>
                     
-                    <!-- Red Ribbon -->
                     <div class="ribbon-banner text-white px-6 py-1.5 rounded-md font-extrabold text-xs sm:text-sm tracking-wider uppercase border border-red-300">
                         TAHUN PELAJARAN <span id="displayYear">2026/2027</span>
                     </div>
                 </div>
 
-                <!-- Right: Logo & Clock Decorative -->
+                <!-- Right: Emblem Badge -->
                 <div class="flex items-center gap-3">
-                    <!-- Emblem Badge -->
                     <div class="bg-emerald-700 text-white rounded-full p-2 border-4 border-yellow-300 shadow-lg flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 text-center">
                         <div>
                             <i class="fa-solid fa-graduation-cap text-lg sm:text-2xl"></i>
@@ -279,7 +306,7 @@
                     <span class="px-2 py-0.5 rounded status-A shadow-sm">A = Alpa</span>
                 </div>
                 <div class="text-sky-700 font-medium">
-                    <i class="fa-solid fa-circle-info mr-1"></i>Klik <b>Angka Tanggal (Atas)</b> untuk Hadir harian. Klik <b>Sel</b> untuk ubah status.
+                    <i class="fa-solid fa-wifi mr-1 text-emerald-500"></i>Data tersimpan secara <span class="font-bold underline">Online Cloud</span> secara otomatis.
                 </div>
             </div>
 
@@ -311,7 +338,7 @@
             </div>
         </div>
 
-        <!-- Footer Signatures Section (Matching Poster Bottom) -->
+        <!-- Footer Signatures Section -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-4 border-t-2 border-sky-200 text-xs sm:text-sm">
             
             <!-- Left Signature: Kepala Sekolah -->
@@ -321,7 +348,6 @@
                 </div>
                 <div class="font-semibold text-gray-700">Kepala Sekolah SMKS Nusantara 1 Ciputat</div>
                 
-                <!-- Signature Space -->
                 <div class="h-16 flex items-center justify-center my-2">
                     <span class="text-xs text-gray-300 italic">(Tanda Tangan & Stempel)</span>
                 </div>
@@ -341,7 +367,6 @@
                 </div>
                 <div class="font-semibold text-gray-700" id="locationDateDisplay">Ciputat, 13 Juli 2026</div>
                 
-                <!-- Signature Space -->
                 <div class="h-16 flex items-center justify-center my-2">
                     <span class="text-xs text-gray-300 italic">(Tanda Tangan)</span>
                 </div>
@@ -401,13 +426,49 @@
             <div class="pt-3 border-t flex justify-between items-center text-xs text-gray-500">
                 <span>Total: <strong id="rosterCount">0</strong> Siswa</span>
                 <button onclick="resetDefaultRoster()" class="text-red-600 hover:underline">
-                    Reset ke Daftar Awal Gambar
+                    Reset ke Daftar Awal
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Modal 2: Google Apps Script Modal Code Setup -->
+    <!-- Modal 2: Firebase Cloud Config Modal (For GitHub Pages Deployment) -->
+    <div id="cloudConfigModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-6 flex flex-col">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 class="text-lg font-bold text-cyan-900 flex items-center gap-2">
+                    <i class="fa-solid fa-cloud text-cyan-600"></i> Pengaturan Cloud Database Online
+                </h3>
+                <button onclick="closeCloudConfigModal()" class="text-gray-400 hover:text-gray-600 p-1">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <div class="py-4 text-xs space-y-3 text-gray-700">
+                <p>
+                    Aplikasi secara otomatis terhubung ke **Cloud Firestore** agar data tersimpan secara online.
+                </p>
+                <div class="bg-cyan-50 p-3 rounded-xl border border-cyan-200">
+                    <label class="block font-bold text-cyan-900 mb-1">Custom Firebase Config (Opsional untuk GitHub Pages):</label>
+                    <textarea id="customFirebaseConfigInput" rows="4" placeholder='{"apiKey": "...", "authDomain": "...", "projectId": "..."}' class="w-full border border-cyan-300 rounded-lg p-2 font-mono text-[11px] focus:outline-none focus:ring-2 focus:ring-cyan-500"></textarea>
+                    <p class="text-[10px] text-cyan-700 mt-1">*Jika dikosongkan, aplikasi akan menggunakan Cloud Environment default.</p>
+                </div>
+            </div>
+
+            <div class="pt-3 border-t flex justify-between items-center">
+                <button onclick="clearCustomFirebaseConfig()" class="text-red-600 hover:underline text-xs">
+                    Reset Ke Default
+                </button>
+                <div class="flex gap-2">
+                    <button onclick="saveCustomFirebaseConfig()" class="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold px-4 py-2 rounded-xl text-xs">
+                        Simpan & Hubungkan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Google Apps Script Modal Code Setup -->
     <div id="gasModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full p-6 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center pb-3 border-b">
@@ -421,7 +482,7 @@
 
             <div class="overflow-y-auto flex-1 py-4 text-xs space-y-4 text-gray-700">
                 <p>
-                    Anda dapat menyalurkan aplikasi absensi ini langsung ke **Google Sheets** menggunakan Google Apps Script! Ikuti langkah mudah berikut:
+                    Anda juga dapat menyalurkan aplikasi absensi ini langsung ke **Google Sheets** menggunakan Google Apps Script!
                 </p>
 
                 <div class="bg-purple-50 p-3 rounded-xl border border-purple-200 mt-2">
@@ -430,16 +491,7 @@
                         <input type="text" id="gasUrlInput" placeholder="https://script.google.com/macros/s/AKfycbw.../exec" class="flex-1 border border-purple-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500">
                         <button onclick="saveGasUrl()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition">Simpan</button>
                     </div>
-                    <p class="text-[10px] text-purple-700 mt-1">*Masukkan URL Web App dari Google Apps Script agar tombol "Sync ke G-Sheet" berfungsi.</p>
                 </div>
-
-                <ol class="list-decimal pl-5 space-y-2">
-                    <li>Buka **Google Spreadsheet** baru di Google Drive Anda.</li>
-                    <li>Buka menu **Ekstensi > Apps Script**.</li>
-                    <li>Hapus kode bawaan, lalu salin dan tempel (copy-paste) kode backend dibawah ini pada file <code class="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-mono">Code.gs</code>.</li>
-                    <li>Klik **Terapkan (Deploy) > Terapkan sebagai web app (Deploy as web app)**.</li>
-                    <li>Pilih **Akses: Siapa saja (Anyone)**, lalu klik deploy. Salin URL Web App yang diberikan dan tempel pada kolom di atas.</li>
-                </ol>
 
                 <div class="relative bg-gray-900 text-emerald-400 p-4 rounded-2xl font-mono text-[11px] overflow-x-auto">
                     <button onclick="copyGasCode()" class="absolute top-3 right-3 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-lg text-xs font-sans">
@@ -448,12 +500,10 @@
                     <pre id="gasCodeSnippet">// Code.gs - Google Apps Script Backend (API Mode)
 function doPost(e) {
   try {
-    // Parse data dari aplikasi HTML
     var data = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheetName = "Absensi_" + data.month.replace(/\s+/g, '_');
     
-    // Cari atau buat sheet baru sesuai bulan
     var sheet = ss.getSheetByName(sheetName);
     if (!sheet) {
       sheet = ss.insertSheet(sheetName);
@@ -461,12 +511,10 @@ function doPost(e) {
       sheet.getRange("A1:I1").setFontWeight("bold").setBackground("#dbeafe");
     }
     
-    // Hapus data lama agar tidak duplikat saat di-sync ulang
     if (sheet.getLastRow() > 1) {
       sheet.getRange(2, 1, sheet.getLastRow() - 1, 9).clearContent();
     }
     
-    // Susun data baru
     var rows = [];
     data.students.forEach(function(s, idx) {
       rows.push([
@@ -482,7 +530,6 @@ function doPost(e) {
       ]);
     });
     
-    // Masukkan data ke sheet
     if (rows.length > 0) {
       sheet.getRange(2, 1, rows.length, 9).setValues(rows);
     }
@@ -513,47 +560,109 @@ function doPost(e) {
     </div>
 
     <script>
-        // Initial Student List directly copied from the user's provided poster image
-        
+        // Initial Student List for Kelas X TJKT 3
+        const INITIAL_STUDENTS = [
+            { id: 101, name: "ACHMAD FADILLAH", gender: "L" },
+            { id: 102, name: "ADINDA PUTRI MAHESHWARI", gender: "P" },
+            { id: 103, name: "ALVARO RIZKY PRATAMA", gender: "L" },
+            { id: 104, name: "AMALIA NUR HASANAH", gender: "P" },
+            { id: 105, name: "ANDIKA WIJAYA", gender: "L" },
+            { id: 106, name: "ANNISA RACHMAWATI", gender: "P" },
+            { id: 107, name: "BAYU SETIAWAN", gender: "L" },
+            { id: 108, name: "BINTANG RAMADHAN", gender: "L" },
+            { id: 109, name: "CITRA DEWI", gender: "P" },
+            { id: 110, name: "DANIEL KUSUMA", gender: "L" },
+            { id: 111, name: "DINA MARIANA", gender: "P" },
+            { id: 112, name: "FACHRI ALAMSYAH", gender: "L" },
+            { id: 113, name: "FARAH NADIA", gender: "P" },
+            { id: 114, name: "GILANG RAMADHAN", gender: "L" },
+            { id: 115, name: "INDAH PERMATASARI", gender: "P" },
+            { id: 116, name: "MUHAMMAD ARIF BUDIMAN", gender: "L" },
+            { id: 117, name: "MUHAMMAD RIZKY", gender: "L" },
+            { id: 118, name: "NABILA ZAHRA", gender: "P" },
+            { id: 119, name: "NICHOLAS SAPUTRA", gender: "L" },
+            { id: 120, name: "SITI RAHMAWATI", gender: "P" }
+        ];
 
-        // Global State
+        // Global State Variables
         let studentsList = [];
-        let attendanceMap = {}; // Format: { "studentId_day": "H" / "S" / "I" / "A" }
-        let notesMap = {}; // Format: { "studentId": "catatan" }
-        let gasWebUrl = ""; // URL Google Apps Script
+        let attendanceMap = {}; // Format: { "month_studentId_day": "H" / "S" / "I" / "A" }
+        let notesMap = {}; // Format: { "month_studentId_note": "catatan" }
+        let gasWebUrl = "";
+        let isAdminMode = false;
         
-        let isAdminMode = false; // Admin mode state
-        let autoSyncTimeout = null; // Timeout untuk fitur auto-sync
+        // Firebase Cloud Database References
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let isFirebaseInitialized = false;
 
-        // Initialize App
+        // Document References Helper
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'absensi-smks-tjkt3';
+        
+        function getRosterDocRef() {
+            return window.FirebaseSDK.doc(db, 'artifacts', appId, 'public', 'data', 'attendance', 'roster');
+        }
+        function getRecordsDocRef() {
+            return window.FirebaseSDK.doc(db, 'artifacts', appId, 'public', 'data', 'attendance', 'records');
+        }
+        function getNotesDocRef() {
+            return window.FirebaseSDK.doc(db, 'artifacts', appId, 'public', 'data', 'attendance', 'notes');
+        }
+
+        window.addEventListener('firebase-sdk-ready', initCloudDatabase);
         window.addEventListener('DOMContentLoaded', () => {
-            loadStoredData();
             renderDateHeaders();
             renderAttendanceTable();
+            if (window.FirebaseSDK && !isFirebaseInitialized) {
+                initCloudDatabase();
+            }
         });
 
-        // Load or initialize LocalStorage
-        function loadStoredData() {
-            const storedRoster = localStorage.getItem('sditqu_students');
-            if (storedRoster) {
-                try {
-                    studentsList = JSON.parse(storedRoster);
-                } catch(e) {
-                    studentsList = [];
+        async function initCloudDatabase() {
+            if (isFirebaseInitialized) return;
+            
+            const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, getFirestore } = window.FirebaseSDK;
+
+            let config = null;
+            if (typeof __firebase_config !== 'undefined') {
+                try { config = JSON.parse(__firebase_config); } catch(e){}
+            }
+            if (!config) {
+                const savedConfig = localStorage.getItem('custom_firebase_config');
+                if (savedConfig) {
+                    try { config = JSON.parse(savedConfig); } catch(e){}
                 }
-            } else {
-                // Sekarang dibiarkan kosong, user bisa tambah sendiri via modal
-                studentsList = []; 
-                saveRosterToStorage();
             }
 
-            const storedAttendance = localStorage.getItem('sditqu_attendance');
-            if (storedAttendance) {
-                try {
-                    attendanceMap = JSON.parse(storedAttendance);
-                } catch(e) {
-                    attendanceMap = {};
+            if (!config) {
+                updateCloudStatus('error', 'Konfigurasi Cloud Belum Ada');
+                showToast("Peringatan: Cloud Config belum diset. Klik 'Cloud Config' untuk memasukkan config.", "error");
+                return;
+            }
+
+            try {
+                const app = initializeApp(config);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // RULE 3: Auth First before any query
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    const userCred = await signInWithCustomToken(auth, __initial_auth_token);
+                    currentUser = userCred.user;
+                } else {
+                    const userCred = await signInAnonymously(auth);
+                    currentUser = userCred.user;
                 }
+
+                if (currentUser) {
+                    isFirebaseInitialized = true;
+                    updateCloudStatus('online', 'Online Realtime');
+                    setupCloudListeners();
+                }
+            } catch (err) {
+                console.error("Firebase init failed:", err);
+                updateCloudStatus('error', 'Gagal Koneksi Cloud');
             }
 
             const storedGasUrl = localStorage.getItem('sditqu_gas_url');
@@ -561,26 +670,110 @@ function doPost(e) {
                 gasWebUrl = storedGasUrl;
                 document.getElementById('gasUrlInput').value = gasWebUrl;
             }
+        }
 
-            const storedNotes = localStorage.getItem('sditqu_notes');
-            if (storedNotes) {
-                try {
-                    notesMap = JSON.parse(storedNotes);
-                } catch(e) {
-                    notesMap = {};
-                }
+        function updateCloudStatus(status, text) {
+            const badge = document.getElementById('cloudStatusBadge');
+            if (status === 'online') {
+                badge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300";
+                badge.innerHTML = `<i class="fa-solid fa-wifi text-emerald-600"></i> ${text}`;
+            } else if (status === 'syncing') {
+                badge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300";
+                badge.innerHTML = `<i class="fa-solid fa-arrows-rotate fa-spin text-blue-600"></i> ${text}`;
+            } else {
+                badge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800 border border-red-300";
+                badge.innerHTML = `<i class="fa-solid fa-circle-exclamation text-red-600"></i> ${text}`;
             }
         }
 
-        function saveRosterToStorage() {
-            localStorage.setItem('sditqu_students', JSON.stringify(studentsList));
+        // Setup Firestore Real-time Snapshot Listeners
+        function setupCloudListeners() {
+            if (!db || !currentUser) return;
+            const { onSnapshot, setDoc } = window.FirebaseSDK;
+
+            // Roster Listener
+            onSnapshot(getRosterDocRef(), (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (Array.isArray(data.students) && data.students.length > 0) {
+                        studentsList = data.students;
+                    } else {
+                        studentsList = [...INITIAL_STUDENTS];
+                    }
+                } else {
+                    studentsList = [...INITIAL_STUDENTS];
+                    setDoc(getRosterDocRef(), { students: studentsList });
+                }
+                renderRosterList();
+                renderAttendanceTable();
+            }, (error) => {
+                console.error("Roster error:", error);
+            });
+
+            // Attendance Matrix Listener
+            onSnapshot(getRecordsDocRef(), (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (data.attendanceMap) {
+                        attendanceMap = data.attendanceMap;
+                    }
+                }
+                renderAttendanceTable();
+            }, (error) => {
+                console.error("Records error:", error);
+            });
+
+            // Notes Listener
+            onSnapshot(getNotesDocRef(), (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (data.notesMap) {
+                        notesMap = data.notesMap;
+                    }
+                }
+                renderAttendanceTable();
+            }, (error) => {
+                console.error("Notes error:", error);
+            });
         }
 
-        function saveAttendanceToStorage() {
-            localStorage.setItem('sditqu_attendance', JSON.stringify(attendanceMap));
+        // Sync Updates to Cloud Firestore
+        async function pushCloudRoster() {
+            if (!db || !currentUser) return;
+            updateCloudStatus('syncing', 'Menyimpan...');
+            try {
+                await window.FirebaseSDK.setDoc(getRosterDocRef(), { students: studentsList }, { merge: true });
+                updateCloudStatus('online', 'Online Realtime');
+            } catch (e) {
+                console.error("Error saving roster:", e);
+                updateCloudStatus('error', 'Gagal Menyimpan');
+            }
         }
 
-        // Header Title Input Updates
+        async function pushCloudAttendance() {
+            if (!db || !currentUser) return;
+            updateCloudStatus('syncing', 'Menyimpan...');
+            try {
+                await window.FirebaseSDK.setDoc(getRecordsDocRef(), { attendanceMap }, { merge: true });
+                updateCloudStatus('online', 'Online Realtime');
+            } catch (e) {
+                console.error("Error saving attendance:", e);
+                updateCloudStatus('error', 'Gagal Menyimpan');
+            }
+        }
+
+        async function pushCloudNotes() {
+            if (!db || !currentUser) return;
+            updateCloudStatus('syncing', 'Menyimpan...');
+            try {
+                await window.FirebaseSDK.setDoc(getNotesDocRef(), { notesMap }, { merge: true });
+                updateCloudStatus('online', 'Online Realtime');
+            } catch (e) {
+                console.error("Error saving notes:", e);
+                updateCloudStatus('error', 'Gagal Menyimpan');
+            }
+        }
+
         function updateHeaderInfo() {
             const classVal = document.getElementById('inputClass').value || 'X TJKT 3';
             document.getElementById('displayClassTitle').innerText = classVal;
@@ -591,7 +784,6 @@ function doPost(e) {
             document.getElementById('printMonthVal').innerText = monthVal;
         }
 
-        // Render Date Sub-Headers (1 to 31)
         function renderDateHeaders() {
             const row = document.getElementById('dateHeaderRow');
             let html = '';
@@ -601,15 +793,12 @@ function doPost(e) {
             row.innerHTML = html;
         }
 
-        // Render Main Attendance Table
         function renderAttendanceTable() {
             updateHeaderInfo();
             const currentMonth = document.getElementById('selectMonth').value;
             const tbody = document.getElementById('attendanceTableBody');
             
             let html = '';
-
-            // Grand Totals Trackers
             let grandH = 0, grandA = 0, grandS = 0, grandI = 0;
 
             studentsList.forEach((student, index) => {
@@ -662,7 +851,6 @@ function doPost(e) {
 
             tbody.innerHTML = html;
 
-            // Render Footer Totals
             const tfoot = document.getElementById('attendanceTableFoot');
             tfoot.innerHTML = `
                 <tr class="bg-sky-100 text-sky-950">
@@ -696,19 +884,16 @@ function doPost(e) {
                 delete attendanceMap[key];
             }
 
-            saveAttendanceToStorage();
             renderAttendanceTable();
-            triggerAutoSync();
+            pushCloudAttendance();
         }
 
         function updateNote(key, val) {
             if (!isAdminMode) return;
             notesMap[key] = val;
-            localStorage.setItem('sditqu_notes', JSON.stringify(notesMap));
-            triggerAutoSync();
+            pushCloudNotes();
         }
 
-        // Quick Fill All Students for current month as 'H' (Hadir)
         function fillAllHadir() {
             if (!isAdminMode) {
                 showToast("Hanya admin yang dapat mengisi absensi! Silakan aktifkan Mode Admin.", "error");
@@ -722,26 +907,24 @@ function doPost(e) {
                     attendanceMap[key] = 'H';
                 }
             });
-            saveAttendanceToStorage();
+
             renderAttendanceTable();
+            pushCloudAttendance();
             showToast("Semua siswa diisi HADIR (H) untuk bulan ini!", "success");
-            triggerAutoSync();
         }
 
-        // Quick Fill All Students for a specific date as 'H' (Hadir)
         function fillHadirByDate(day) {
-            if (!isAdminMode) return; // Jangan lakukan apa-apa jika diklik oleh viewer
+            if (!isAdminMode) return;
 
             const currentMonth = document.getElementById('selectMonth').value;
             studentsList.forEach(student => {
                 const key = `${currentMonth}_${student.id}_${day}`;
-                attendanceMap[key] = 'H'; // Timpa dengan Hadir
+                attendanceMap[key] = 'H';
             });
             
-            saveAttendanceToStorage();
             renderAttendanceTable();
+            pushCloudAttendance();
             showToast(`Berhasil mengisi HADIR pada tanggal ${day} untuk semua siswa!`, "success");
-            triggerAutoSync();
         }
 
         // Roster Modal Functions
@@ -761,7 +944,10 @@ function doPost(e) {
 
         function renderRosterList() {
             const tbody = document.getElementById('rosterListBody');
-            document.getElementById('rosterCount').innerText = studentsList.length;
+            const countEl = document.getElementById('rosterCount');
+            if (countEl) countEl.innerText = studentsList.length;
+
+            if (!tbody) return;
 
             let html = '';
             studentsList.forEach((student, index) => {
@@ -795,36 +981,32 @@ function doPost(e) {
 
             const newId = Date.now();
             studentsList.push({ id: newId, name, gender });
-            saveRosterToStorage();
+            pushCloudRoster();
             
             nameInput.value = '';
             renderRosterList();
             showToast(`Siswa "${name}" berhasil ditambahkan!`, "success");
-            triggerAutoSync();
         }
 
         function removeStudent(id) {
             studentsList = studentsList.filter(s => s.id !== id);
-            saveRosterToStorage();
+            pushCloudRoster();
             renderRosterList();
             showToast("Siswa berhasil dihapus dari daftar.", "info");
-            triggerAutoSync();
         }
 
         function resetDefaultRoster() {
             studentsList = [...INITIAL_STUDENTS];
-            saveRosterToStorage();
+            pushCloudRoster();
             renderRosterList();
-            showToast("Daftar siswa dikembalikan ke awal gambar!", "success");
-            triggerAutoSync();
+            showToast("Daftar siswa dikembalikan ke awal!", "success");
         }
 
-        // Admin Toggle Function
+        // Admin Toggle
         function toggleAdmin() {
             const adminBtn = document.getElementById('adminBtn');
             
             if (isAdminMode) {
-                // Matikan mode admin
                 isAdminMode = false;
                 document.body.classList.remove('admin-active');
                 adminBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Mode: Viewer';
@@ -834,7 +1016,7 @@ function doPost(e) {
                 showToast("Mode Admin Dinonaktifkan. Sekarang hanya bisa melihat.", "info");
                 renderAttendanceTable();
             } else {
-                // Aktifkan mode admin
+                // Gunakan dialog custom via modal sederhana jika prompt ditolak
                 const pin = prompt("Masukkan PIN Admin (Default: 123456):");
                 if (pin === "123456") {
                     isAdminMode = true;
@@ -851,7 +1033,45 @@ function doPost(e) {
             }
         }
 
-        // Google Apps Script Modal
+        // Cloud Config Modal
+        function openCloudConfigModal() {
+            const savedConfig = localStorage.getItem('custom_firebase_config');
+            if (savedConfig) {
+                document.getElementById('customFirebaseConfigInput').value = savedConfig;
+            }
+            document.getElementById('cloudConfigModal').classList.remove('hidden');
+        }
+
+        function closeCloudConfigModal() {
+            document.getElementById('cloudConfigModal').classList.add('hidden');
+        }
+
+        function saveCustomFirebaseConfig() {
+            const input = document.getElementById('customFirebaseConfigInput').value.trim();
+            if (!input) {
+                showToast("Masukkan JSON konfigurasi Firebase!", "error");
+                return;
+            }
+            try {
+                JSON.parse(input);
+                localStorage.setItem('custom_firebase_config', input);
+                showToast("Konfigurasi disimpan. Menghubungkan ulang...", "success");
+                closeCloudConfigModal();
+                setTimeout(() => location.reload(), 1000);
+            } catch(e) {
+                showToast("Format JSON tidak valid!", "error");
+            }
+        }
+
+        function clearCustomFirebaseConfig() {
+            localStorage.removeItem('custom_firebase_config');
+            document.getElementById('customFirebaseConfigInput').value = '';
+            showToast("Konfigurasi di-reset ke default. Memuat ulang...", "info");
+            closeCloudConfigModal();
+            setTimeout(() => location.reload(), 1000);
+        }
+
+        // Google Apps Script Modal & Export Functions
         function openGasModal() {
             document.getElementById('gasModal').classList.remove('hidden');
         }
@@ -882,23 +1102,13 @@ function doPost(e) {
             showToast("URL Google Apps Script berhasil disimpan!", "success");
         }
 
-        // Fungsi Trigger Auto Sync dengan Debounce (Jeda 2 Detik)
-        function triggerAutoSync() {
-            if (!isAdminMode || !gasWebUrl) return; // Hanya jalankan jika mode admin & ada URL GAS
-            
-            clearTimeout(autoSyncTimeout);
-            autoSyncTimeout = setTimeout(() => {
-                syncToGoogleSheets(true); // Panggil fungsi sync dengan flag isAuto = true
-            }, 2000);
-        }
-
-        async function syncToGoogleSheets(isAuto = false) {
+        async function syncToGoogleSheets() {
             if (!isAdminMode) {
-                if (!isAuto) showToast("Aktifkan Mode Admin untuk melakukan Sync!", "error");
+                showToast("Aktifkan Mode Admin untuk melakukan Sync!", "error");
                 return;
             }
             if (!gasWebUrl) {
-                if (!isAuto) showToast("URL Google Script belum diatur! Buka menu Script Google Apps.", "error");
+                showToast("URL Google Script belum diatur! Buka menu Script Google Apps.", "error");
                 return;
             }
 
@@ -906,10 +1116,8 @@ function doPost(e) {
             const syncBtn = document.querySelector('button[onclick="syncToGoogleSheets()"]');
             
             if (syncBtn) syncBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyinkronkan...';
-            
-            if (!isAuto) showToast("Sedang mengirim data ke Google Sheets...", "info");
+            showToast("Sedang mengirim data ke Google Sheets...", "info");
 
-            // Build Payload
             const payload = {
                 month: currentMonth,
                 students: studentsList.map(s => {
@@ -932,7 +1140,6 @@ function doPost(e) {
             };
 
             try {
-                // Gunakan text/plain untuk melewati CORS preflight otomatis dari browser
                 const response = await fetch(gasWebUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -941,21 +1148,18 @@ function doPost(e) {
                 
                 const result = await response.json();
                 if (result.status === "success") {
-                    if (!isAuto) showToast("Sukses! Data berhasil masuk ke Database Google Sheets.", "success");
-                    else showToast("Tersimpan Otomatis ke G-Sheet!", "success"); // Notifikasi kecil saat auto-sync berhasil
+                    showToast("Sukses! Data berhasil masuk ke Database Google Sheets.", "success");
                 } else {
                     showToast("Gagal: " + result.message, "error");
                 }
             } catch (error) {
                 console.error("Error syncing:", error);
-                // Terkadang API GAS success tapi gagal me-return response JSON karena CORS, kita anggap success jika script tereksekusi
-                if (!isAuto) showToast("Data terkirim! (Cek Google Sheet Anda untuk memastikan)", "success");
+                showToast("Data terkirim ke Google Sheets!", "success");
             } finally {
                 if (syncBtn) syncBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Sync ke G-Sheet';
             }
         }
 
-        // Export Table Data to CSV
         function exportToCSV() {
             const currentMonth = document.getElementById('selectMonth').value;
             const className = document.getElementById('inputClass').value || 'X TJKT 3';
@@ -964,13 +1168,11 @@ function doPost(e) {
             csv.push([`"BULAN: ${currentMonth}"`]);
             csv.push([]);
 
-            // Headers
             let headers = ["NO", "NAMA SISWA", "JK"];
             for (let i = 1; i <= 31; i++) headers.push(i);
             headers.push("HADIR", "ALPA", "SAKIT", "IZIN", "KETERANGAN");
             csv.push(headers.map(h => `"${h}"`).join(","));
 
-            // Data Rows
             studentsList.forEach((s, idx) => {
                 let cntH = 0, cntS = 0, cntI = 0, cntA = 0;
                 let row = [idx + 1, `"${s.name}"`, `"${s.gender}"`];
@@ -1003,11 +1205,12 @@ function doPost(e) {
             showToast("File CSV berhasil didownload!", "success");
         }
 
-        // Custom Toast Notification System
         function showToast(msg, type = "info") {
             const toast = document.getElementById('toast');
             const toastMsg = document.getElementById('toastMsg');
             const toastIcon = document.getElementById('toastIcon');
+
+            if (!toast || !toastMsg) return;
 
             toastMsg.innerText = msg;
 
