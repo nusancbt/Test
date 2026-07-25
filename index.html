@@ -537,15 +537,6 @@ function doPost(e) {
     </div>
 
     <script>
-        // Initial Dummy Data
-        const INITIAL_STUDENTS = [
-            { id: 101, name: "ADITYA PRATAMA", gender: "L" },
-            { id: 102, name: "BELLA SAPUTRI", gender: "P" },
-            { id: 103, name: "CITRA KIRANA", gender: "P" },
-            { id: 104, name: "DONI TATA", gender: "L" },
-            { id: 105, name: "EKA WARDHANI", gender: "P" }
-        ];
-
         // Global State
         let studentsList = [];
         let attendanceMap = {}; 
@@ -562,7 +553,7 @@ function doPost(e) {
             
             // Re-render table if inputs change
             document.querySelectorAll('input.admin-readonly').forEach(input => {
-                input.addEventListener('input', triggerAutoSync); // Save text changes
+                input.addEventListener('input', triggerAutoSync); 
             });
         });
 
@@ -574,83 +565,29 @@ function doPost(e) {
         async function initDataLoad() {
             if (gasWebUrl && gasWebUrl.startsWith("https://script.google.com/")) {
                 updateCloudStatus('syncing', 'Membaca Google Sheets...');
-                const success = await loadFromGoogleSheets();
-                if (!success) loadFromLocalStorage();
+                await loadFromGoogleSheets();
             } else {
-                updateCloudStatus('error', 'Mode Lokal (URL GAS Belum Diatur)');
-                loadFromLocalStorage();
-            }
-        }
-
-        function loadFromLocalStorage() {
-            try {
-                const localRoster = localStorage.getItem('smks_roster');
-                studentsList = localRoster ? JSON.parse(localRoster) : [...INITIAL_STUDENTS];
-
-                const localAtt = localStorage.getItem('smks_attendanceMap');
-                if (localAtt) attendanceMap = JSON.parse(localAtt);
-
-                const localNotes = localStorage.getItem('smks_notesMap');
-                if (localNotes) notesMap = JSON.parse(localNotes);
-                
-                // Load form states
-                const formState = localStorage.getItem('smks_formState');
-                if (formState) {
-                    const state = JSON.parse(formState);
-                    if(state.school) document.getElementById('inputSchoolName').value = state.school;
-                    if(state.year) document.getElementById('inputYear').value = state.year;
-                    if(state.kelas) document.getElementById('inputClass').value = state.kelas;
-                    if(state.kepsek) document.getElementById('inputKepsek').value = state.kepsek;
-                    if(state.nipKepsek) document.getElementById('inputNipKepsek').value = state.nipKepsek;
-                    if(state.wali) document.getElementById('inputWali').value = state.wali;
-                    if(state.nipWali) document.getElementById('inputNipWali').value = state.nipWali;
-                    if(state.city) document.getElementById('inputCity').value = state.city;
-                    if(state.date) document.getElementById('inputSignDate').value = state.date;
-                }
-
-            } catch (e) {
-                console.warn("Error loading local storage:", e);
-                studentsList = [...INITIAL_STUDENTS];
-            }
-            renderRosterList();
-            renderAttendanceTable();
-        }
-
-        function saveToLocalStorage() {
-            try {
-                localStorage.setItem('smks_roster', JSON.stringify(studentsList));
-                localStorage.setItem('smks_attendanceMap', JSON.stringify(attendanceMap));
-                localStorage.setItem('smks_notesMap', JSON.stringify(notesMap));
-                
-                // Save header/footer inputs
-                localStorage.setItem('smks_formState', JSON.stringify({
-                    school: document.getElementById('inputSchoolName').value,
-                    year: document.getElementById('inputYear').value,
-                    kelas: document.getElementById('inputClass').value,
-                    kepsek: document.getElementById('inputKepsek').value,
-                    nipKepsek: document.getElementById('inputNipKepsek').value,
-                    wali: document.getElementById('inputWali').value,
-                    nipWali: document.getElementById('inputNipWali').value,
-                    city: document.getElementById('inputCity').value,
-                    date: document.getElementById('inputSignDate').value
-                }));
-            } catch (e) {
-                console.warn("Error saving:", e);
+                updateCloudStatus('error', 'URL GAS Belum Diatur');
+                showToast("URL Google Apps Script belum diatur. Silakan atur melalui menu Pengaturan.", "error");
+                // Reset state to empty
+                studentsList = [];
+                attendanceMap = {};
+                notesMap = {};
+                renderRosterList();
+                renderAttendanceTable();
             }
         }
 
         async function loadFromGoogleSheets() {
             try {
-                // We use cross-origin GET request
                 const response = await fetch(gasWebUrl, { method: 'GET', redirect: 'follow' });
                 const result = await response.json();
 
                 if (result && result.status === 'success') {
-                    studentsList = (result.students && result.students.length > 0) ? result.students : [...INITIAL_STUDENTS];
+                    studentsList = result.students || [];
                     attendanceMap = result.attendanceMap || {};
                     notesMap = result.notesMap || {};
 
-                    saveToLocalStorage();
                     renderRosterList();
                     renderAttendanceTable();
                     updateCloudStatus('online', 'G-Sheets Terhubung');
@@ -664,9 +601,7 @@ function doPost(e) {
         }
 
         function triggerAutoSync() {
-            saveToLocalStorage();
-            
-            // Only sync visual inputs to local storage for speed, wait to sync data to sheets
+            // Only sync visual inputs if URL is present and admin
             if (!gasWebUrl || !isAdminMode) return;
 
             updateCloudStatus('syncing', 'Menyimpan...');
@@ -674,7 +609,7 @@ function doPost(e) {
 
             syncDebounceTimer = setTimeout(() => {
                 syncToGoogleSheets(false);
-            }, 1500); // 1.5s delay to prevent spamming Google Apps Script
+            }, 1500);
         }
 
         async function syncToGoogleSheets(showNotification = true) {
@@ -729,8 +664,6 @@ function doPost(e) {
                 }
             } catch (error) {
                 console.error("Sync error:", error);
-                // CORS issues often mean success in GAS but fetch throws error. 
-                // We fallback to saying it likely worked if no explicit GAS error.
                 updateCloudStatus('online', 'G-Sheets Sinkron (Tanpa Respon)');
                 if (showNotification) showToast("Data terkirim ke Google Sheets.", "success");
             }
